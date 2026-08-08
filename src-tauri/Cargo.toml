@@ -1,0 +1,34 @@
+[package]
+name = "fortress-key"
+version = "1.0.0"
+description = "Fortress Key - Offline Cold Wallet Security"
+authors = ["CryptoStandard <jcreyx>"]
+license = "MIT"
+repository = "https://github.com/cryptostandard/fortress-key"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.3", features = [] }
+tauri-plugin-log = "2"
+
+# Cryptographic primitives (audited, constant-time, memory-safe)
+k256 = { version = "0.13", features = ["ecdsa", "sha256"] }  # secp256k1 (RustCrypto, audited)
+sha2 = "0.10"           # SHA-256, SHA-512
+ripemd = "0.1"           # RIPEMD-160
+sha3 = "0.10"            # Keccak-256
+pbkdf2 = "0.12"          # PBKDF2
+hmac = "0.12"            # HMAC
+hex = "0.4"              # Hex encoding
+bs58 = { version = "0.5", features = ["check"] }  # Base58Check
+zeroize = { version = "1.7", features = ["derive"] }  # Secure memory zeroing

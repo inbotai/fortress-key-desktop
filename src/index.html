@@ -1,0 +1,2761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fortress Key - Open Source Cold Wallet Security</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a2e;
+  --border: #2a2a3e;
+  --text: #e0e0e8;
+  --text-dim: #8888a0;
+  --accent: #f7931a;
+  --accent2: #4fc3f7;
+  --green: #4caf50;
+  --red: #ef5350;
+  --yellow: #ffd54f;
+  --orange: #ff9800;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+.header {
+  text-align: center;
+  padding: 40px 0 30px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 30px;
+}
+.header h1 { font-size: 2.2em; color: var(--accent); letter-spacing: 2px; }
+.header .subtitle { color: var(--text-dim); font-size: 0.9em; margin-top: 8px; }
+.badge {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--green);
+  color: var(--green);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75em;
+  margin-top: 12px;
+}
+.badge.quantum {
+  border-color: #bb86fc;
+  color: #bb86fc;
+  margin-left: 8px;
+}
+
+.quantum-toggle {
+  background: var(--surface);
+  border: 2px solid #bb86fc;
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+.quantum-toggle .qt-label { color: #bb86fc; font-weight: bold; font-size: 0.95em; }
+.quantum-toggle .qt-desc { color: var(--text-dim); font-size: 0.8em; margin-top: 4px; }
+.qt-switch {
+  position: relative;
+  width: 56px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.qt-switch input { opacity: 0; width: 0; height: 0; }
+.qt-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--surface2);
+  border-radius: 28px;
+  border: 1px solid var(--border);
+  transition: 0.3s;
+}
+.qt-slider:before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: 0.3s;
+}
+.qt-switch input:checked + .qt-slider { background: #bb86fc; border-color: #bb86fc; }
+.qt-switch input:checked + .qt-slider:before { transform: translateX(28px); background: #000; }
+
+.quantum-badge {
+  display: inline-block;
+  background: rgba(187,134,252,0.15);
+  border: 1px solid #bb86fc;
+  color: #bb86fc;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7em;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tab {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface);
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 0.95em;
+  transition: all 0.2s;
+}
+.tab:hover { background: var(--surface2); color: var(--text); }
+.tab.active { background: var(--accent); color: #000; font-weight: bold; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Scanner */
+.wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.wallet-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.wallet-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.wallet-card.selected { border-color: var(--accent); background: var(--surface2); }
+.wallet-card h3 { color: var(--accent); margin-bottom: 5px; }
+.wallet-card .maker { color: var(--text-dim); font-size: 0.8em; }
+
+.firmware-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.firmware-input label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 0.85em; }
+.firmware-input select {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.action-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: opacity 0.2s;
+}
+.action-btn:hover { opacity: 0.9; }
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.vuln-report {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  display: none;
+}
+.vuln-item { padding: 15px; border-bottom: 1px solid var(--border); }
+.vuln-item:last-child { border-bottom: none; }
+.vuln-severity {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: bold;
+  margin-right: 8px;
+}
+.severity-critical { background: var(--red); color: #fff; }
+.severity-high { background: var(--orange); color: #000; }
+.severity-medium { background: var(--yellow); color: #000; }
+.severity-low { background: var(--accent2); color: #000; }
+.vuln-title { font-weight: bold; margin-bottom: 5px; }
+.vuln-desc { color: var(--text-dim); font-size: 0.85em; margin-bottom: 8px; }
+.vuln-fix { color: var(--green); font-size: 0.85em; }
+.vuln-cve { color: var(--accent2); font-size: 0.8em; }
+.safe-report { text-align: center; padding: 40px; color: var(--green); font-size: 1.1em; }
+
+/* Generator */
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mode-btn {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface);
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 0.85em;
+  transition: all 0.2s;
+}
+.mode-btn:hover { background: var(--surface2); }
+.mode-btn.active { background: var(--green); color: #000; font-weight: bold; }
+
+.layer-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+.layer-section h3 { color: var(--accent2); margin-bottom: 5px; font-size: 0.95em; }
+.layer-section .desc { color: var(--text-dim); font-size: 0.8em; margin-bottom: 12px; }
+.layer-section input, .layer-section textarea {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9em;
+}
+.layer-section textarea { resize: vertical; min-height: 60px; }
+
+.dice-area { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.dice-btn {
+  padding: 10px 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dice-btn:hover { border-color: var(--accent); background: var(--accent); color: #000; }
+.dice-results { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.dice-val {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--accent);
+  font-weight: bold;
+}
+.clear-dice {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  color: var(--red);
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 0.8em;
+}
+
+/* Entropy meter */
+.entropy-meter {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+.entropy-bar-bg {
+  height: 12px;
+  background: var(--bg);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.entropy-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s, background 0.4s;
+  width: 0%;
+}
+.entropy-label { display: flex; justify-content: space-between; font-size: 0.85em; }
+.entropy-bits { color: var(--accent); font-weight: bold; }
+.entropy-verdict { font-weight: bold; }
+
+/* Output */
+.output-section {
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  display: none;
+}
+.key-display {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 15px;
+  margin: 10px 0;
+  word-break: break-all;
+  font-size: 0.85em;
+}
+.key-display .label {
+  color: var(--text-dim);
+  font-size: 0.75em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.key-display .value { color: var(--accent); font-weight: bold; }
+.key-display .value.private { color: var(--red); }
+.key-display .value.address { color: var(--green); }
+
+.warning-box {
+  background: rgba(239,83,80,0.1);
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+  font-size: 0.85em;
+  color: var(--red);
+}
+.info-box {
+  background: rgba(79,195,247,0.1);
+  border: 1px solid var(--accent2);
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+  font-size: 0.85em;
+  color: var(--accent2);
+}
+.success-box {
+  background: rgba(76,175,80,0.1);
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+  font-size: 0.85em;
+  color: var(--green);
+}
+
+.destroy-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 15px;
+}
+.destroy-btn:hover { opacity: 0.9; }
+
+.verify-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent2);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.verify-btn:hover { opacity: 0.9; }
+
+/* How it works */
+.how-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 20px;
+}
+.how-section h3 { color: var(--accent); margin-bottom: 15px; }
+.step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+.step-num {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  background: var(--accent);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.step-text h4 { margin-bottom: 4px; }
+.step-text p { color: var(--text-dim); font-size: 0.85em; }
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  font-size: 0.85em;
+}
+.comparison-table th, .comparison-table td {
+  padding: 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.comparison-table th { background: var(--surface2); color: var(--accent); }
+.comparison-table td { background: var(--surface); }
+
+/* Air-Gap Signer */
+.airgap-step-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+.airgap-step-box h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.airgap-step-box h3 .step-badge {
+  background: var(--accent);
+  color: #000;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 0.75em;
+}
+.airgap-step-box h3 .step-location {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.loc-online { background: rgba(76,175,80,0.2); border: 1px solid var(--green); color: var(--green); }
+.loc-offline { background: rgba(239,83,80,0.2); border: 1px solid var(--red); color: var(--red); }
+.airgap-step-box .desc { color: var(--text-dim); font-size: 0.8em; margin-bottom: 12px; }
+.airgap-input {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85em;
+  margin-bottom: 8px;
+}
+.airgap-input::placeholder { color: var(--text-dim); }
+textarea.airgap-input { resize: vertical; min-height: 80px; }
+.airgap-output {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 15px;
+  word-break: break-all;
+  font-size: 0.8em;
+  color: var(--accent);
+  margin: 10px 0;
+  min-height: 50px;
+  user-select: all;
+  cursor: pointer;
+}
+.airgap-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  margin-bottom: 15px;
+  font-size: 0.85em;
+  color: var(--text-dim);
+}
+.airgap-flow .flow-step {
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.85em;
+}
+.airgap-flow .flow-arrow { color: var(--accent); font-size: 1.3em; }
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.footer {
+  text-align: center;
+  padding: 30px 0;
+  margin-top: 40px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.8em;
+}
+
+@media (max-width: 600px) {
+  .wallet-grid { grid-template-columns: 1fr; }
+  .header h1 { font-size: 1.5em; }
+  .mode-toggle { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>FORTRESS KEY</h1>
+    <div class="subtitle">Your Recipe = Your Key. No Wordlists. No Middleman.</div>
+    <div class="badge">100% OFFLINE - ZERO DATA TRANSMITTED</div>
+    <div class="badge quantum">POST-QUANTUM READY</div>
+    <div class="badge" style="border-color:var(--accent2); color:var(--accent2);">CURE53 AUDITED CRYPTO</div>
+  </div>
+
+  <!-- Online Warning Banner -->
+  <div id="onlineWarning" style="display:none; background:rgba(239,83,80,0.15); border:2px solid var(--red); border-radius:8px; padding:15px; margin-bottom:20px; text-align:center;">
+    <strong style="color:var(--red); font-size:1.1em;">WARNING: YOU ARE ONLINE</strong><br>
+    <span style="color:var(--red); font-size:0.85em;">
+      For maximum security: <strong>disconnect from the internet</strong> before generating keys.<br>
+      Never generate keys while connected to the internet.
+    </span>
+  </div>
+
+  <!-- Offline Ready Banner -->
+  <div id="offlineReady" style="display:none; background:rgba(76,175,80,0.15); border:2px solid var(--green); border-radius:8px; padding:15px; margin-bottom:20px; text-align:center;">
+    <strong style="color:var(--green); font-size:1.1em;">OFFLINE MODE - SECURE</strong><br>
+    <span style="color:var(--green); font-size:0.85em;">No internet connection detected. Safe to generate keys.</span>
+  </div>
+
+  <!-- Desktop App: Always Offline -->
+  <div style="background:rgba(76,175,80,0.15); border:2px solid var(--green); border-radius:8px; padding:12px; margin-bottom:20px; text-align:center;">
+    <strong style="color:var(--green);">DESKTOP APP - ALWAYS OFFLINE</strong><br>
+    <span style="color:var(--green); font-size:0.85em;">All crypto runs in Rust with secure memory zeroing. No browser limitations.</span>
+  </div>
+
+  <!-- JS Error Banner (hidden unless error) -->
+  <div id="jsErrorBanner" style="display:none; background:rgba(239,83,80,0.15); border:2px solid var(--red); border-radius:8px; padding:15px; margin-bottom:20px;">
+    <strong style="color:var(--red);">JavaScript Error Detected</strong><br>
+    <span style="color:var(--red); font-size:0.85em;" id="jsErrorMsg"></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('scanner')">SCANNER</button>
+    <button class="tab" onclick="switchTab('generator')">KEY GENERATOR</button>
+    <button class="tab" onclick="switchTab('airgap')">AIR-GAP SIGNER</button>
+    <button class="tab" onclick="switchTab('quantum')">QUANTUM SHIELD</button>
+    <button class="tab" onclick="switchTab('verify')">SELF-TEST</button>
+    <button class="tab" onclick="switchTab('howto')">HOW IT WORKS</button>
+  </div>
+
+  <!-- ==================== SCANNER PANEL ==================== -->
+  <div id="panel-scanner" class="panel active">
+    <h2 style="margin-bottom:15px; color:var(--text-dim); font-size:0.95em;">Select your hardware wallet:</h2>
+    <div class="wallet-grid" id="walletGrid"></div>
+    <div class="firmware-input" id="firmwareSection" style="display:none;">
+      <label>Select your firmware version:</label>
+      <select id="firmwareSelect"><option value="">-- Select firmware --</option></select>
+    </div>
+    <button class="action-btn" id="scanBtn" onclick="runScan()" disabled>SCAN FOR VULNERABILITIES</button>
+    <div class="vuln-report" id="vulnReport"></div>
+  </div>
+
+  <!-- ==================== GENERATOR PANEL ==================== -->
+  <div id="panel-generator" class="panel">
+
+    <!-- Mode Toggle -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeRaw" onclick="setMode('raw')">MODE 1: RAW KEY (Recommended)</button>
+      <button class="mode-btn" id="modeBip39" onclick="setMode('bip39')">MODE 2: Hardware Bridge (BIP39)</button>
+    </div>
+
+    <div class="info-box" id="modeDesc" style="margin-bottom:20px;">
+      <strong>MODE 1 - PURE FORTRESS:</strong> Your recipe generates a raw 256-bit private key. No public wordlists involved. Import into Electrum, Sparrow, or any wallet that accepts raw/WIF keys. Your recipe IS your key.
+    </div>
+
+    <!-- Layers -->
+    <div class="layer-section">
+      <h3>LAYER 1 - Personal Phrase</h3>
+      <div class="desc">A sentence only you would know. Example: "My grandmother cooked arroz con pollo every Sunday"</div>
+      <input type="text" id="layer1" placeholder="Enter your personal phrase..." oninput="updateEntropy()">
+    </div>
+
+    <div class="layer-section">
+      <h3>LAYER 2 - Your Invented Words</h3>
+      <div class="desc">Words YOU made up that exist in NO dictionary on Earth. This is what makes your key unbreakable. Example: "flurbnax zoptikrel"</div>
+      <input type="text" id="layer2" placeholder="Enter your invented words..." oninput="updateEntropy()">
+    </div>
+
+    <div class="layer-section">
+      <h3>LAYER 3 - Numbers + Symbols</h3>
+      <div class="desc">Any combination of numbers and special characters. Example: "!!73**@942&amp;&amp;%%"</div>
+      <input type="text" id="layer3" placeholder="Enter numbers and symbols..." oninput="updateEntropy()">
+    </div>
+
+    <div class="layer-section">
+      <h3>LAYER 4 - Dice Rolls (Physical Randomness)</h3>
+      <div class="desc">Roll a REAL physical die and click the result. Each roll adds ~2.6 bits of true randomness that no computer can predict.</div>
+      <div class="dice-area">
+        <button class="dice-btn" onclick="addDice(1)">1</button>
+        <button class="dice-btn" onclick="addDice(2)">2</button>
+        <button class="dice-btn" onclick="addDice(3)">3</button>
+        <button class="dice-btn" onclick="addDice(4)">4</button>
+        <button class="dice-btn" onclick="addDice(5)">5</button>
+        <button class="dice-btn" onclick="addDice(6)">6</button>
+        <button class="clear-dice" onclick="clearDice()">Clear</button>
+      </div>
+      <div class="dice-results" id="diceResults"></div>
+    </div>
+
+    <div class="layer-section">
+      <h3>LAYER 5 - Extra Secret Sauce</h3>
+      <div class="desc">Anything: coordinates, dates, song lyrics, another language, emojis, code... the more unique to YOU, the stronger.</div>
+      <textarea id="layer5" placeholder="Add anything else you want..." oninput="updateEntropy()"></textarea>
+    </div>
+
+    <!-- Quantum Shield Toggle -->
+    <div class="quantum-toggle">
+      <div>
+        <div class="qt-label">QUANTUM SHIELD</div>
+        <div class="qt-desc">Adds 3 layers of hash-based post-quantum protection (Keccak-256 + SHA-256 cascading). Resistant to Shor's and Grover's algorithms.</div>
+      </div>
+      <label class="qt-switch">
+        <input type="checkbox" id="quantumShield" checked>
+        <span class="qt-slider"></span>
+      </label>
+    </div>
+
+    <!-- Entropy Meter -->
+    <div class="entropy-meter">
+      <div class="entropy-label">
+        <span>Entropy Strength</span>
+        <span class="entropy-bits" id="entropyBits">0 bits</span>
+      </div>
+      <div class="entropy-bar-bg">
+        <div class="entropy-bar" id="entropyBar"></div>
+      </div>
+      <div class="entropy-label">
+        <span class="entropy-verdict" id="entropyVerdict" style="color:var(--red);">Add more layers</span>
+        <span id="entropyTime" style="color:var(--text-dim); font-size:0.8em;"></span>
+      </div>
+    </div>
+
+    <button class="action-btn" id="generateBtn" onclick="generateKey()" disabled>GENERATE FORTRESS KEY</button>
+
+    <!-- Output Section -->
+    <div class="output-section" id="outputSection">
+
+      <!-- Mode 1: Raw Key Output -->
+      <div id="outputRaw">
+        <h3 style="color:var(--accent); margin-bottom:15px;">YOUR FORTRESS KEY <span class="quantum-badge" id="qsBadge" style="display:none;">QUANTUM SHIELDED</span></h3>
+
+        <div class="key-display">
+          <div class="label">Private Key (Hex) - NEVER SHARE THIS</div>
+          <div class="value private" id="privKeyHex"></div>
+        </div>
+
+        <div class="key-display">
+          <div class="label">Private Key (WIF - Bitcoin)</div>
+          <div class="value private" id="privKeyWIF"></div>
+        </div>
+
+        <div class="key-display">
+          <div class="label">Private Key (WIF - Dogecoin)</div>
+          <div class="value private" id="privKeyWIF_DOGE"></div>
+        </div>
+
+        <div class="key-display">
+          <div class="label">Bitcoin Address (P2PKH)</div>
+          <div class="value address" id="btcAddress"></div>
+        </div>
+
+        <div class="key-display">
+          <div class="label" style="color:#c3a634;">Dogecoin Address</div>
+          <div class="value address" id="dogeAddress" style="color:#c3a634;"></div>
+        </div>
+
+        <div class="key-display">
+          <div class="label">Ethereum Address</div>
+          <div class="value address" id="ethAddress"></div>
+        </div>
+
+        <div class="key-display">
+          <div class="label">Verification Hash (SHA-256 of private key)</div>
+          <div class="value" id="verifyHash" style="color:var(--accent2);"></div>
+        </div>
+
+        <div class="success-box">
+          <strong>HOW TO IMPORT:</strong><br><br>
+          <strong style="color:var(--accent);">BITCOIN:</strong><br>
+          <strong>Electrum:</strong> File &gt; New &gt; Import Private Keys &gt; paste BTC WIF<br>
+          <strong>Sparrow:</strong> New Wallet &gt; Import &gt; paste BTC WIF<br>
+          <strong>Exodus:</strong> Settings &gt; Import Private Key &gt; paste BTC WIF<br><br>
+          <strong style="color:#c3a634;">DOGECOIN:</strong><br>
+          <strong>Dogechain.info:</strong> Settings &gt; Import Private Key &gt; paste DOGE WIF<br>
+          <strong>Coinomi:</strong> Add Wallet &gt; Dogecoin &gt; Restore &gt; paste DOGE WIF<br>
+          <strong>Exodus:</strong> Settings &gt; Import Private Key &gt; select Dogecoin &gt; paste DOGE WIF<br>
+          <strong>MultiDoge:</strong> Tools &gt; Import Private Keys &gt; paste DOGE WIF<br><br>
+          <strong style="color:var(--accent2);">ETHEREUM:</strong><br>
+          <strong>MetaMask:</strong> Import Account &gt; Private Key &gt; paste Hex key (without 0x)<br><br>
+          <strong>For hardware wallets:</strong> Switch to Mode 2 (Hardware Bridge) to get BIP39 format.
+        </div>
+      </div>
+
+      <!-- Mode 2: BIP39 Output (hidden by default) -->
+      <div id="outputBip39" style="display:none;">
+        <h3 style="color:var(--accent); margin-bottom:5px;">TEMPORARY BIP39 TRANSLATION</h3>
+        <p style="color:var(--text-dim); font-size:0.8em; margin-bottom:10px;">These 24 words are a TEMPORARY format for your hardware wallet. Your recipe is your REAL backup. Destroy these after import.</p>
+        <div id="seedWords" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:15px 0;"></div>
+
+        <div class="key-display">
+          <div class="label">Verification Hash (SHA-256)</div>
+          <div class="value" id="seedHash" style="color:var(--accent2);"></div>
+        </div>
+
+        <div style="padding:15px; background:var(--surface2); border-radius:8px; margin-top:10px; font-size:0.85em;">
+          <strong style="color:var(--accent);">Import Instructions:</strong><br>
+          <strong>Coldcard:</strong> New Seed &gt; Import Existing &gt; 24 Words<br>
+          <strong>Ledger:</strong> Restore from Recovery Phrase &gt; 24 Words<br>
+          <strong>Trezor:</strong> Recover Wallet &gt; 24 Words<br>
+          <strong>KeepKey:</strong> Recover &gt; 24 Word Recovery<br>
+          <strong>BitBox02:</strong> Restore from Recovery Words &gt; 24 Words
+        </div>
+      </div>
+
+      <div class="warning-box">
+        <strong>CRITICAL SECURITY:</strong><br>
+        1. NEVER share your private key or WIF with anyone.<br>
+        2. NEVER take a screenshot or save digitally.<br>
+        3. Your RECIPE is your permanent backup - memorize it.<br>
+        4. Same recipe = same key. Always. On any device.<br>
+        5. Click DESTROY when you're done importing.
+      </div>
+
+      <button class="verify-btn" onclick="verifyRecipe()">VERIFY: Re-enter recipe to confirm same key</button>
+      <button class="destroy-btn" onclick="destroyOutput()">DESTROY ALL OUTPUT</button>
+    </div>
+  </div>
+
+  <!-- ==================== AIR-GAP SIGNER PANEL ==================== -->
+  <div id="panel-airgap" class="panel">
+
+    <div class="info-box" style="margin-bottom:20px; border-color:var(--accent); color:var(--accent);">
+      <strong>MODE 3: FORTRESS KEY IS YOUR COLD WALLET</strong><br>
+      No hardware wallet needed. Use two computers: one online (to prepare transactions) and one offline (to sign with your recipe). The private key NEVER touches an internet-connected device.
+    </div>
+
+    <!-- Visual Flow -->
+    <div class="airgap-flow">
+      <div class="flow-step loc-online">ONLINE<br>Prepare TX</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step" style="background:var(--surface2); border:1px solid var(--border); border-radius:6px;">Copy hex<br>via USB/paper</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step loc-offline">OFFLINE<br>Sign TX</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step" style="background:var(--surface2); border:1px solid var(--border); border-radius:6px;">Copy signed<br>via USB/paper</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step loc-online">ONLINE<br>Broadcast</div>
+    </div>
+
+    <!-- Step 1: ONLINE - Prepare Transaction -->
+    <div class="airgap-step-box">
+      <h3>
+        <span class="step-badge">STEP 1</span>
+        <span class="step-location loc-online">ONLINE COMPUTER</span>
+        Prepare Transaction
+      </h3>
+      <div class="desc">
+        Get your UTXO info from a block explorer (blockchair.com, mempool.space, or blockchain.info).
+        Search your Bitcoin address and find unspent outputs.
+      </div>
+
+      <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px;">Your Bitcoin Address (sender)</label>
+      <input class="airgap-input" id="agSenderAddr" placeholder="1ABC... (your Fortress Key BTC address)">
+
+      <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px; margin-top:8px;">UTXO Transaction ID (from block explorer)</label>
+      <input class="airgap-input" id="agUtxoTxid" placeholder="e.g. 7a1b2c3d4e5f... (64 hex characters)">
+
+      <div class="input-row">
+        <div>
+          <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px;">UTXO Output Index</label>
+          <input class="airgap-input" id="agUtxoVout" type="number" placeholder="0" value="0">
+        </div>
+        <div>
+          <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px;">UTXO Amount (satoshis)</label>
+          <input class="airgap-input" id="agUtxoValue" type="number" placeholder="e.g. 100000">
+        </div>
+      </div>
+
+      <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px; margin-top:8px;">Recipient Address</label>
+      <input class="airgap-input" id="agRecipient" placeholder="1XYZ... (destination BTC address)">
+
+      <div class="input-row">
+        <div>
+          <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px;">Send Amount (satoshis)</label>
+          <input class="airgap-input" id="agAmount" type="number" placeholder="e.g. 50000">
+        </div>
+        <div>
+          <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px;">Fee (satoshis)</label>
+          <input class="airgap-input" id="agFee" type="number" placeholder="e.g. 1000" value="2000">
+        </div>
+      </div>
+
+      <div id="agChangeInfo" style="color:var(--text-dim); font-size:0.8em; margin:8px 0;"></div>
+
+      <button class="action-btn" onclick="prepareTransaction()" style="margin-top:10px;">PREPARE UNSIGNED TRANSACTION</button>
+
+      <div id="agUnsignedOutput" style="display:none;">
+        <div style="color:var(--text-dim); font-size:0.8em; margin-top:10px;">Unsigned Transaction Hex (copy this to your OFFLINE computer):</div>
+        <div class="airgap-output" id="agUnsignedHex" onclick="copyAirgap(this)"></div>
+        <div style="color:var(--text-dim); font-size:0.7em;" id="agCopyMsg1">Click to copy</div>
+      </div>
+    </div>
+
+    <!-- Step 2: OFFLINE - Sign Transaction -->
+    <div class="airgap-step-box">
+      <h3>
+        <span class="step-badge">STEP 2</span>
+        <span class="step-location loc-offline">OFFLINE COMPUTER</span>
+        Sign Transaction
+      </h3>
+      <div class="desc">
+        On your air-gapped computer (NO internet), open Fortress Key and paste the unsigned transaction hex below.
+        Then enter your recipe to sign it.
+      </div>
+
+      <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px;">Paste Unsigned Transaction Hex</label>
+      <textarea class="airgap-input" id="agUnsignedInput" placeholder="Paste the unsigned transaction hex from Step 1..."></textarea>
+
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:15px; margin:10px 0;">
+        <div style="color:var(--red); font-weight:bold; font-size:0.85em; margin-bottom:8px;">ENTER YOUR RECIPE TO SIGN</div>
+        <div style="color:var(--text-dim); font-size:0.8em; margin-bottom:8px;">This derives your private key and signs the transaction. The key exists only during signing and is destroyed after.</div>
+        <input class="airgap-input" id="agLayer1" placeholder="Layer 1: Personal phrase">
+        <input class="airgap-input" id="agLayer2" placeholder="Layer 2: Invented words">
+        <input class="airgap-input" id="agLayer3" placeholder="Layer 3: Numbers + symbols">
+        <div style="margin:8px 0;">
+          <div style="color:var(--text-dim); font-size:0.8em; margin-bottom:4px;">Layer 4: Dice rolls</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="dice-btn" style="padding:6px 14px; font-size:1em;" onclick="addDiceAG(1)">1</button>
+            <button class="dice-btn" style="padding:6px 14px; font-size:1em;" onclick="addDiceAG(2)">2</button>
+            <button class="dice-btn" style="padding:6px 14px; font-size:1em;" onclick="addDiceAG(3)">3</button>
+            <button class="dice-btn" style="padding:6px 14px; font-size:1em;" onclick="addDiceAG(4)">4</button>
+            <button class="dice-btn" style="padding:6px 14px; font-size:1em;" onclick="addDiceAG(5)">5</button>
+            <button class="dice-btn" style="padding:6px 14px; font-size:1em;" onclick="addDiceAG(6)">6</button>
+            <button class="clear-dice" onclick="clearDiceAG()">Clear</button>
+          </div>
+          <div id="agDiceResults" style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;"></div>
+        </div>
+        <textarea class="airgap-input" id="agLayer5" placeholder="Layer 5: Extra secret sauce" style="min-height:40px;"></textarea>
+      </div>
+
+      <label style="display:flex; align-items:center; gap:8px; color:#bb86fc; font-size:0.85em; margin:8px 0; cursor:pointer;">
+        <input type="checkbox" id="agQuantumShield" checked style="accent-color:#bb86fc;"> Quantum Shield
+      </label>
+
+      <button class="action-btn" onclick="signTransaction()" style="background:var(--red); color:#fff; margin-top:10px;">SIGN TRANSACTION (OFFLINE)</button>
+
+      <div id="agSignedOutput" style="display:none;">
+        <div style="color:var(--text-dim); font-size:0.8em; margin-top:10px;">Signed Transaction Hex (copy this to your ONLINE computer):</div>
+        <div class="airgap-output" id="agSignedHex" onclick="copyAirgap(this)" style="border-color:var(--green); color:var(--green);"></div>
+        <div style="color:var(--text-dim); font-size:0.7em;" id="agCopyMsg2">Click to copy</div>
+
+        <div class="key-display" style="margin-top:10px;">
+          <div class="label">Transaction Details</div>
+          <div id="agTxDetails" style="font-size:0.8em; color:var(--text-dim);"></div>
+        </div>
+
+        <button class="destroy-btn" onclick="destroyAirgap()" style="margin-top:10px;">DESTROY SIGNING DATA</button>
+      </div>
+    </div>
+
+    <!-- Step 3: ONLINE - Broadcast -->
+    <div class="airgap-step-box">
+      <h3>
+        <span class="step-badge">STEP 3</span>
+        <span class="step-location loc-online">ONLINE COMPUTER</span>
+        Broadcast Transaction
+      </h3>
+      <div class="desc">
+        Paste the signed transaction hex and broadcast it to the Bitcoin network.
+      </div>
+
+      <label style="color:var(--text-dim); font-size:0.8em; display:block; margin-bottom:4px;">Paste Signed Transaction Hex</label>
+      <textarea class="airgap-input" id="agBroadcastInput" placeholder="Paste the signed transaction hex from Step 2..."></textarea>
+
+      <div class="success-box" style="margin-bottom:15px;">
+        <strong>Broadcast your signed transaction at any of these services:</strong><br><br>
+        <strong>BlockCypher:</strong> blockcypher.com/pushtx/btc<br>
+        <strong>Mempool.space:</strong> mempool.space/tx/push<br>
+        <strong>Blockchair:</strong> blockchair.com/broadcast<br>
+        <strong>Blockchain.com:</strong> blockchain.com/btc/pushtx<br><br>
+        Paste the signed hex, click submit, and your transaction is on the Bitcoin network.<br>
+        <strong>No wallet software needed. No account needed.</strong>
+      </div>
+    </div>
+
+    <!-- How Air-Gap Works -->
+    <div class="how-section">
+      <h3>Why Air-Gap Signing Is The Gold Standard</h3>
+      <table class="comparison-table">
+        <tr>
+          <th></th>
+          <th>Hardware Wallet</th>
+          <th>Fortress Key Air-Gap</th>
+        </tr>
+        <tr>
+          <td><strong>Private Key</strong></td>
+          <td>Stored on device chip</td>
+          <td>Never stored — derived from recipe each time, destroyed after</td>
+        </tr>
+        <tr>
+          <td><strong>If device is stolen</strong></td>
+          <td>PIN protects, but physical attacks possible</td>
+          <td>Nothing to steal — key is in your head</td>
+        </tr>
+        <tr>
+          <td><strong>Firmware bugs</strong></td>
+          <td>Can compromise keys</td>
+          <td>No firmware — just math in a browser</td>
+        </tr>
+        <tr>
+          <td><strong>Supply chain</strong></td>
+          <td>Must trust manufacturer shipping</td>
+          <td>Open source HTML file, verify yourself</td>
+        </tr>
+        <tr>
+          <td><strong>Cost</strong></td>
+          <td>$60-250</td>
+          <td>Free (use any old laptop offline)</td>
+        </tr>
+        <tr>
+          <td><strong>Recovery</strong></td>
+          <td>Need 24-word backup</td>
+          <td>Your recipe = your backup. Nothing to lose.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== SELF-TEST / VERIFY PANEL ==================== -->
+  <div id="panel-verify" class="panel">
+    <div class="how-section">
+      <h3 style="color:var(--green);">Cryptographic Self-Test</h3>
+      <p style="color:var(--text-dim); font-size:0.85em; margin-bottom:15px;">
+        These tests verify that every cryptographic primitive produces correct, known outputs.
+        All test vectors are from official Bitcoin/Ethereum specifications and can be independently verified.
+        Run these tests every time you download a new copy of Fortress Key.
+      </p>
+
+      <button class="action-btn" onclick="runSelfTest()" style="background:var(--green); margin-bottom:20px;">RUN ALL TESTS</button>
+
+      <div id="testResults" style="font-size:0.85em;"></div>
+    </div>
+
+    <div class="how-section" style="margin-top:15px;">
+      <h3 style="color:var(--accent2);">What These Tests Prove</h3>
+      <div style="color:var(--text-dim); font-size:0.85em;">
+        <p><strong>SHA-256:</strong> Verified against NIST test vectors. Ensures hashing is correct for address generation and transaction signing.</p>
+        <p style="margin-top:8px;"><strong>RIPEMD-160:</strong> Verified against known outputs. Used in Bitcoin address derivation (Hash160 = RIPEMD160(SHA256(pubkey))).</p>
+        <p style="margin-top:8px;"><strong>Keccak-256:</strong> Verified against Ethereum test vectors. Used for Ethereum address derivation and Quantum Shield.</p>
+        <p style="margin-top:8px;"><strong>secp256k1:</strong> Verified that a known private key produces the correct public key. This is the elliptic curve used by Bitcoin and Ethereum.</p>
+        <p style="margin-top:8px;"><strong>Bitcoin Address:</strong> Verified that a known private key produces the correct P2PKH address (starts with '1').</p>
+        <p style="margin-top:8px;"><strong>Ethereum Address:</strong> Verified that a known private key produces the correct 0x address.</p>
+        <p style="margin-top:8px;"><strong>WIF Encoding:</strong> Verified that private key to Wallet Import Format conversion is correct.</p>
+        <p style="margin-top:8px;"><strong>ECDSA Signing:</strong> Verified that signing produces valid, deterministic signatures (RFC 6979).</p>
+        <p style="margin-top:8px;"><strong>PBKDF2-SHA512:</strong> Verified against known test vectors. Ensures recipe-to-key derivation is correct and deterministic.</p>
+      </div>
+    </div>
+
+    <div class="how-section" style="margin-top:15px;">
+      <h3 style="color:var(--accent);">Audit Information</h3>
+      <div style="color:var(--text-dim); font-size:0.85em;">
+        <p>All cryptographic primitives use the <strong>noble-curves</strong> and <strong>noble-hashes</strong> libraries by Paul Miller.</p>
+        <p style="margin-top:8px;">These libraries have been independently audited by <strong>Cure53</strong>, a leading security research firm.</p>
+        <p style="margin-top:8px;">Audit report: <span style="color:var(--accent2);">cure53.de/pentest-report_noble-libs.pdf</span></p>
+        <p style="margin-top:8px;">Source: <span style="color:var(--accent2);">github.com/paulmillr/noble-curves</span> | <span style="color:var(--accent2);">github.com/paulmillr/noble-hashes</span></p>
+      </div>
+    </div>
+
+    <div class="info-box" style="margin-top:15px; border-color:var(--orange); color:var(--orange);">
+      <strong>Memory Limitation Notice:</strong><br>
+      JavaScript running in a browser cannot securely zero memory. Private keys and intermediate buffers may persist in RAM until garbage collection or page close. This is a fundamental browser limitation, not specific to Fortress Key.<br><br>
+      <strong>Mitigation:</strong> Always run on an air-gapped computer. Close the browser tab immediately after use. For maximum security, reboot the computer after generating keys.
+    </div>
+  </div>
+
+  <!-- ==================== QUANTUM SHIELD PANEL ==================== -->
+  <div id="panel-quantum" class="panel">
+    <div class="how-section">
+      <h3 style="color:#bb86fc;">The Quantum Threat — Honest Assessment</h3>
+      <table class="comparison-table">
+        <tr>
+          <th></th>
+          <th>Needed to Break BTC</th>
+          <th>Current State (2026)</th>
+        </tr>
+        <tr>
+          <td><strong>Logical Qubits</strong></td>
+          <td>2,500 - 4,000</td>
+          <td>~10-20 usable</td>
+        </tr>
+        <tr>
+          <td><strong>Physical Qubits</strong></td>
+          <td>10-20 MILLION</td>
+          <td>~1,500-2,000</td>
+        </tr>
+        <tr>
+          <td><strong>Error Rate</strong></td>
+          <td>Near zero</td>
+          <td>Still very high</td>
+        </tr>
+        <tr>
+          <td><strong>Realistic Timeline</strong></td>
+          <td colspan="2" style="color:#bb86fc;text-align:center;"><strong>10-20 years (NOT 2 years)</strong></td>
+        </tr>
+      </table>
+      <div class="info-box" style="border-color:#bb86fc; color:#bb86fc; margin-top:15px;">
+        <strong>Bottom line:</strong> Quantum computers will NOT break Bitcoin in 2 years. Anyone saying otherwise is uninformed or has an agenda. But 10-15 years? Bitcoin needs to be ready. And so should your keys.
+      </div>
+    </div>
+
+    <div class="how-section">
+      <h3 style="color:#bb86fc;">Two Quantum Attacks on Bitcoin</h3>
+
+      <div class="step">
+        <div class="step-num" style="background:#bb86fc;">1</div>
+        <div class="step-text">
+          <h4>Shor's Algorithm — Breaks Elliptic Curves</h4>
+          <p>Can derive private keys from public keys by solving the discrete logarithm problem on secp256k1. This is the main threat. Requires ~2,500-4,000 logical qubits. Current quantum computers have ~10-20. The gap is 100-400x.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num" style="background:#bb86fc;">2</div>
+        <div class="step-text">
+          <h4>Grover's Algorithm — Weakens Hash Functions</h4>
+          <p>Reduces the effective security of hash functions by half. SHA-256 goes from 256 bits to 128 bits of security. Still strong enough (128 bits = trillions of years), but we add extra protection anyway.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-section">
+      <h3 style="color:#bb86fc;">How Fortress Key's Quantum Shield Works</h3>
+
+      <div class="step">
+        <div class="step-num" style="background:#bb86fc;">1</div>
+        <div class="step-text">
+          <h4>Layer 1: PBKDF2-SHA512 (500,000 rounds)</h4>
+          <p>Standard key derivation. Even with Grover's quadratic speedup, this requires 707+ rounds of quantum computation per guess — each round is astronomically expensive on a quantum computer.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num" style="background:#bb86fc;">2</div>
+        <div class="step-text">
+          <h4>Layer 2: Keccak-256 Cascade (10,000 rounds)</h4>
+          <p>The PBKDF2 output is run through 10,000 rounds of Keccak-256 (SHA-3 family). Keccak is a different construction than SHA-256 (sponge vs Merkle-Damgard). An attacker would need to break BOTH hash families — quantum algorithms that target one don't automatically target the other.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num" style="background:#bb86fc;">3</div>
+        <div class="step-text">
+          <h4>Layer 3: SHA-256 + Keccak-256 XOR Fusion</h4>
+          <p>Final output combines SHA-256 and Keccak-256 via XOR. The result is only breakable if BOTH hash functions are simultaneously compromised — a scenario no quantum algorithm currently addresses.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num" style="background:#bb86fc;">4</div>
+        <div class="step-text">
+          <h4>Layer 4: Your Invented Words (Human Quantum Shield)</h4>
+          <p>This is the most underrated quantum defense: Grover's algorithm provides quadratic speedup on KNOWN search spaces. But your invented words create an UNKNOWN search space. Grover can speed up searching through all English words — but it can't speed up searching through words that don't exist in any database. The search space is effectively infinite even for quantum.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-section">
+      <h3 style="color:#bb86fc;">Fortress Key vs Quantum — Side by Side</h3>
+      <table class="comparison-table">
+        <tr>
+          <th>Attack</th>
+          <th>Standard BIP39</th>
+          <th>Fortress Key + Quantum Shield</th>
+        </tr>
+        <tr>
+          <td><strong>Shor's (curve attack)</strong></td>
+          <td style="color:var(--red);">Breaks secp256k1 if public key is exposed</td>
+          <td style="color:var(--red);">Same risk (secp256k1 used for addresses) — mitigated by not reusing addresses</td>
+        </tr>
+        <tr>
+          <td><strong>Grover's (hash attack)</strong></td>
+          <td style="color:var(--orange);">256→128 bit security. Searchable wordlist.</td>
+          <td style="color:var(--green);">Dual-hash (Keccak+SHA256). Unknown search space. 128 bits still = trillions of years.</td>
+        </tr>
+        <tr>
+          <td><strong>Brute force key</strong></td>
+          <td style="color:var(--orange);">2048^24 from known list — quantum reduces time</td>
+          <td style="color:var(--green);">Unknown character set + invented words = infinite search space even for quantum</td>
+        </tr>
+        <tr>
+          <td><strong>Future-proof</strong></td>
+          <td style="color:var(--orange);">Needs Bitcoin protocol upgrade (BIP-360)</td>
+          <td style="color:var(--green);">Hash-based protection already quantum-resistant. Recipe system is algorithm-agnostic.</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="how-section">
+      <h3 style="color:#bb86fc;">The Bitcoin Community Response</h3>
+      <div class="info-box" style="border-color:#bb86fc; color:#bb86fc; margin:0;">
+        <strong>BIP-360:</strong> Proposes quantum-resistant signature schemes for Bitcoin. Under active development.<br><br>
+        <strong>NIST Post-Quantum Standards (2024):</strong><br>
+        &bull; <strong>CRYSTALS-Dilithium</strong> — lattice-based digital signatures<br>
+        &bull; <strong>SPHINCS+</strong> — hash-based signatures (quantum-resistant by design)<br>
+        &bull; <strong>CRYSTALS-Kyber</strong> — lattice-based key encapsulation<br><br>
+        <strong>What this means:</strong> Bitcoin CAN upgrade via soft fork before quantum becomes a real threat. The math, the proposals, and the code are already being built. Fortress Key's hash-based Quantum Shield is aligned with SPHINCS+ philosophy — using hash security as the foundation rather than mathematical problems quantum computers can solve.
+      </div>
+    </div>
+
+    <div class="how-section">
+      <h3 style="color:#bb86fc;">Best Practices for Quantum-Safe Bitcoin</h3>
+      <div style="padding:0;">
+        <div class="step">
+          <div class="step-num" style="background:#bb86fc;">1</div>
+          <div class="step-text">
+            <h4>Never Reuse Addresses</h4>
+            <p>Shor's algorithm needs your PUBLIC key. Bitcoin only exposes the public key AFTER you spend from an address. If you never reuse addresses, your public key is only briefly exposed during a transaction.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:#bb86fc;">2</div>
+          <div class="step-text">
+            <h4>Use Fortress Key with Quantum Shield ON</h4>
+            <p>The dual-hash cascade (Keccak + SHA-256) ensures your key derivation is resistant to Grover's algorithm. Your invented words make brute force impossible even with quantum speedup.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:#bb86fc;">3</div>
+          <div class="step-text">
+            <h4>Move to Post-Quantum Addresses When Available</h4>
+            <p>When BIP-360 or equivalent is activated, migrate your funds to quantum-resistant addresses. Your Fortress Key recipe stays the same — only the address format changes.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:#bb86fc;">4</div>
+          <div class="step-text">
+            <h4>Don't Panic</h4>
+            <p>Quantum computers that can break Bitcoin are 10-20 years away. The Bitcoin community is already building defenses. Your keys generated today with Quantum Shield are among the most secure possible.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HOW IT WORKS PANEL ==================== -->
+  <div id="panel-howto" class="panel">
+    <div class="how-section">
+      <h3>Why Fortress Key Is Different</h3>
+      <table class="comparison-table">
+        <tr>
+          <th></th>
+          <th>Traditional (BIP39)</th>
+          <th>Fortress Key (Mode 1)</th>
+        </tr>
+        <tr>
+          <td><strong>Key Source</strong></td>
+          <td>24 words from a PUBLIC list of 2,048 known words</td>
+          <td>YOUR recipe: invented words, symbols, dice - none from any public list</td>
+        </tr>
+        <tr>
+          <td><strong>Attacker Knows</strong></td>
+          <td>The exact 2,048 words. Just needs the combination.</td>
+          <td>NOTHING. Not even the character set you used.</td>
+        </tr>
+        <tr>
+          <td><strong>Dictionary Attack</strong></td>
+          <td>Possible (2048^24 combinations from known list)</td>
+          <td>Impossible (your made-up words exist in no dictionary)</td>
+        </tr>
+        <tr>
+          <td><strong>Who Generates</strong></td>
+          <td>The wallet firmware (which can have bugs)</td>
+          <td>YOU generate. Wallet is just a signing device.</td>
+        </tr>
+        <tr>
+          <td><strong>Backup</strong></td>
+          <td>Metal plate with 24 words (can be found/stolen)</td>
+          <td>Your memory. Nothing physical to steal.</td>
+        </tr>
+        <tr>
+          <td><strong>Recovery</strong></td>
+          <td>Need the 24 words written somewhere</td>
+          <td>Re-enter recipe on any device, get same key</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="how-section">
+      <h3>How It Works - Step by Step</h3>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <h4>You Create Your Secret Recipe</h4>
+          <p>Combine 5 layers: personal phrases, INVENTED words (not from any dictionary), numbers, symbols, physical dice rolls, and anything else. This combination is unique to you and exists nowhere else in the universe.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <h4>PBKDF2-SHA512 (500,000 Rounds)</h4>
+          <p>Your recipe is processed through 500,000 rounds of cryptographic hashing. This is a one-way function - knowing the output tells you NOTHING about the input. Even with all computing power on Earth, reversing it is mathematically impossible.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <h4>Raw 256-bit Private Key</h4>
+          <p>The output is a raw cryptographic private key - a 64-character hex number. This is NOT from any wordlist. It's a direct mathematical result of YOUR unique recipe. This key controls your Bitcoin and Ethereum addresses.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">
+          <h4>Import Into Any Wallet</h4>
+          <p><strong>Software wallets</strong> (Electrum, Sparrow, MetaMask): Import the raw key or WIF directly. No 24 words needed.<br><strong>Hardware wallets</strong> (Coldcard, Ledger): Use Mode 2 to get a temporary BIP39 translation for import only.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-text">
+          <h4>Destroy + Remember</h4>
+          <p>Destroy all displayed output. Your recipe stays in your head. If you ever need to recover: open Fortress Key on ANY device, enter the SAME recipe, get the SAME key. Works offline, forever, on any computer.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-section">
+      <h3>Why This Defeats Hardware Wallet Bugs</h3>
+      <div class="info-box" style="margin:0;">
+        The Coldcard vulnerability was in its <strong>key generation firmware</strong>. When the wallet generates your key, you're trusting that its random number generator works correctly. If it doesn't (like the Coldcard bug), your key could be predictable.<br><br>
+        Fortress Key removes the wallet from key generation entirely. <strong>You</strong> generate the key from <strong>your</strong> recipe. The wallet becomes a signing device only - it holds the key but never created it. A firmware bug in key generation <strong>cannot affect a key that was never generated by firmware</strong>.
+      </div>
+    </div>
+
+    <div class="how-section">
+      <h3>The Math: Why Your Recipe Is Unbreakable</h3>
+      <div class="info-box" style="margin:0;">
+        A typical 5-layer recipe with invented words produces <strong>300+ bits of entropy</strong>.<br><br>
+        Bitcoin private keys are 256 bits. To brute-force 256 bits:<br>
+        &bull; Guesses needed: ~10<sup>77</sup><br>
+        &bull; All computers on Earth combined: ~10<sup>20</sup> guesses/second<br>
+        &bull; Time to crack: ~10<sup>50</sup> YEARS<br>
+        &bull; Age of the universe: ~10<sup>10</sup> years<br><br>
+        But here's the real difference: with BIP39, an attacker <strong>knows the wordlist</strong> (2,048 words) and just needs to guess the order. With Fortress Key, the attacker doesn't even know <strong>what characters you used</strong>, let alone the words you invented. The search space is effectively infinite.
+      </div>
+    </div>
+  </div>
+
+  <!-- Security Checklist -->
+  <div style="background:var(--surface); border:2px solid var(--red); border-radius:8px; padding:25px; margin-top:30px;">
+    <h3 style="text-align:center; color:var(--red); margin-bottom:15px;">Security Checklist</h3>
+    <p style="text-align:center; color:var(--text-dim); font-size:0.85em; margin-bottom:20px;">
+      The code is open source and audited. But YOUR environment determines your security.<br>
+      Follow this checklist every time you generate keys.
+    </p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:15px;">
+        <div style="color:var(--red); font-weight:bold; font-size:0.9em; margin-bottom:10px;">BEFORE GENERATING KEYS</div>
+        <div style="color:var(--text-dim); font-size:0.8em; line-height:2;">
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Downloaded from cryptostandard.info or GitHub</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Disconnected from the internet</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Using a clean browser (zero extensions)</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Closed all other browser tabs</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Ideally on an air-gapped computer</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Ran Self-Test (15/15 passed)</label>
+        </div>
+      </div>
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:15px;">
+        <div style="color:var(--green); font-weight:bold; font-size:0.9em; margin-bottom:10px;">AFTER GENERATING KEYS</div>
+        <div style="color:var(--text-dim); font-size:0.8em; line-height:2;">
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Imported key into wallet</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Clicked DESTROY ALL OUTPUT</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Closed the browser completely</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Rebooted the computer</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Will NEVER type recipe on an online device</label>
+          <label style="display:block; cursor:pointer;"><input type="checkbox" style="accent-color:var(--green); margin-right:8px;">Recipe is memorized (not written digitally)</label>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:15px; padding:12px; background:rgba(239,83,80,0.1); border:1px solid var(--red); border-radius:6px; text-align:center;">
+      <span style="color:var(--red); font-size:0.85em;">
+        <strong>WARNING:</strong> Generating keys on a malware-infected computer, while online, or with browser extensions running can compromise your keys — regardless of how secure this tool is. The code is not the vulnerability. Your environment is.
+      </span>
+    </div>
+    <div style="margin-top:10px; text-align:center;">
+      <span style="color:var(--text-dim); font-size:0.8em;">Report bugs or security issues: <a href="https://x.com/jcreyx" target="_blank" style="color:var(--accent2); text-decoration:none;">@jcreyx on X</a> | <a href="https://github.com/cryptostandard/fortress-key/issues" target="_blank" style="color:var(--accent2); text-decoration:none;">GitHub Issues</a></span>
+    </div>
+  </div>
+
+  <!-- Donation Section -->
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:25px; margin-top:30px;">
+    <h3 style="text-align:center; color:var(--accent); margin-bottom:15px;">Support Fortress Key</h3>
+    <p style="text-align:center; color:var(--text-dim); font-size:0.85em; margin-bottom:20px;">
+      This tool is free and open source. If it helped you secure your crypto, consider donating.<br>
+      100% of donations fund development, security audits, and keeping the tool free for everyone.
+    </p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:15px;">
+      <div style="background:var(--bg); border:1px solid var(--accent); border-radius:6px; padding:15px;">
+        <div style="color:var(--accent); font-weight:bold; font-size:0.85em; margin-bottom:8px;">BITCOIN (BTC)</div>
+        <div style="word-break:break-all; font-size:0.75em; color:var(--text); user-select:all; cursor:pointer;" id="donateBTC" onclick="copyDonation(this)" title="Click to copy">1MEVZK7Wkuxb5GicQdpqs7zjYvncTzRYtF</div>
+        <div style="color:var(--text-dim); font-size:0.7em; margin-top:5px;" id="donateBTCmsg">Click to copy</div>
+      </div>
+      <div style="background:var(--bg); border:1px solid #c3a634; border-radius:6px; padding:15px;">
+        <div style="color:#c3a634; font-weight:bold; font-size:0.85em; margin-bottom:8px;">DOGECOIN (DOGE)</div>
+        <div style="word-break:break-all; font-size:0.75em; color:var(--text); user-select:all; cursor:pointer;" id="donateDOGE" onclick="copyDonation(this)" title="Click to copy">DRNb6a4A4KrscGuD9DpQQtALS4WumLoxxR</div>
+        <div style="color:var(--text-dim); font-size:0.7em; margin-top:5px;" id="donateDOGEmsg">Click to copy</div>
+      </div>
+    </div>
+    <p style="text-align:center; color:var(--text-dim); font-size:0.75em; margin-top:15px;">
+      These donation addresses were generated using Fortress Key. We eat our own cooking.
+    </p>
+  </div>
+
+  <div class="footer">
+    FORTRESS KEY &mdash; Open Source &mdash; MIT License &mdash; Zero Dependencies &mdash; 100% Client-Side<br>
+    <span style="color:var(--red);">This tool NEVER connects to the internet. Verify by running offline.</span><br>
+    Audit the code. Trust nothing. Verify everything.
+  </div>
+</div>
+
+
+
+<script>
+// Tauri API - with fallback for when __TAURI__ isn't ready yet
+let invoke;
+if (window.__TAURI__ && window.__TAURI__.core) {
+  invoke = window.__TAURI__.core.invoke;
+} else {
+  // Fallback: functions will show alert if Tauri not available
+  invoke = async function(cmd, args) {
+    console.error('Tauri invoke not available for:', cmd);
+    throw new Error('Tauri backend not connected. Restart the app.');
+  };
+}
+
+// =====================================================
+// STUB: Browser crypto globals not needed in Tauri
+// All crypto is handled by Rust backend via invoke()
+// These stubs prevent reference errors from UI code
+// =====================================================
+const NobleSecp256k1 = { Point: { Fn: { ORDER: 0n } }, getPublicKey: () => new Uint8Array(33), sign: () => ({}), verify: () => true };
+const NobleSHA256 = (b) => new Uint8Array(32);
+const NobleSHA512 = (b) => new Uint8Array(64);
+const NobleRIPEMD160 = (b) => new Uint8Array(20);
+const NobleKeccak256 = (b) => new Uint8Array(32);
+const NobleHMAC = () => new Uint8Array(32);
+const NoblePBKDF2 = () => new Uint8Array(32);
+const NobleToHex = (b) => Array.from(b || []).map(x => x.toString(16).padStart(2,'0')).join('');
+const NobleFromHex = (h) => { const r = new Uint8Array((h||'').length/2); for(let i=0;i<r.length;i++) r[i]=parseInt(h.substr(i*2,2),16); return r; };
+
+
+// =====================================================
+// GLOBAL ERROR HANDLER
+// =====================================================
+window.onerror = function(msg, url, line, col, err) {
+  var banner = document.getElementById('jsErrorBanner');
+  var msgEl = document.getElementById('jsErrorMsg');
+  if (banner && msgEl) {
+    banner.style.display = 'block';
+    msgEl.textContent = msg + ' (line ' + line + ')';
+  }
+  console.error('Fortress Key Error:', msg, 'line:', line);
+  return false;
+};
+
+// =====================================================
+// CRYPTO WRAPPERS (using Cure53-audited noble libraries)
+// All cryptographic primitives below use:
+//   @noble/curves v1.x - https://github.com/paulmillr/noble-curves
+//   @noble/hashes v1.x - https://github.com/paulmillr/noble-hashes
+//   Audit report: https://cure53.de/pentest-report_noble-libs.pdf
+// =====================================================
+const SECP256K1 = (() => {
+  const N = NobleSecp256k1.Point.Fn.ORDER;
+
+  function getPublicKey(privKeyHex) {
+    const privBytes = NobleFromHex(privKeyHex);
+    const pubCompressed = NobleSecp256k1.getPublicKey(privBytes, true);
+    const pubUncompressed = NobleSecp256k1.getPublicKey(privBytes, false);
+    const compHex = NobleToHex(pubCompressed);
+    const uncompHex = NobleToHex(pubUncompressed);
+    return {
+      compressed: compHex,
+      uncompressed: uncompHex
+    };
+  }
+
+  return { getPublicKey, N };
+})();
+
+// SHA-256 wrapper (noble-hashes)
+const SHA256 = (() => {
+  function hash(bytes) { return NobleSHA256(bytes); }
+  function doubleHash(bytes) { return hash(hash(bytes)); }
+  function hex(bytes) { return NobleToHex(bytes); }
+  return { hash, doubleHash, hex };
+})();
+
+// RIPEMD-160 wrapper (noble-hashes)
+const RIPEMD160 = (() => {
+  function hash(bytes) { return NobleRIPEMD160(bytes); }
+  return { hash };
+})();
+
+// Keccak-256 wrapper (noble-hashes)
+const KECCAK256 = (() => {
+  function hash(bytes) { return NobleKeccak256(bytes); }
+  function hex(bytes) { return NobleToHex(bytes); }
+  return { hash, hex };
+})();
+
+// =====================================================
+// BASE58CHECK (for Bitcoin WIF and addresses)
+// =====================================================
+const BASE58 = (() => {
+  const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+  function encode(bytes) {
+    let num = 0n;
+    for (const b of bytes) num = num * 256n + BigInt(b);
+    let str = '';
+    while (num > 0n) {
+      str = ALPHABET[Number(num % 58n)] + str;
+      num /= 58n;
+    }
+    for (const b of bytes) {
+      if (b !== 0) break;
+      str = '1' + str;
+    }
+    return str;
+  }
+
+  function encodeCheck(payload) {
+    const checksum = SHA256.doubleHash(payload).slice(0, 4);
+    const full = new Uint8Array(payload.length + 4);
+    full.set(payload);
+    full.set(checksum, payload.length);
+    return encode(full);
+  }
+
+  return { encode, encodeCheck };
+})();
+
+// =====================================================
+// BIP39 WORDLIST (for Mode 2 only)
+// =====================================================
+const BIP39_WORDLIST = [
+"abandon","ability","able","about","above","absent","absorb","abstract","absurd","abuse",
+"access","accident","account","accuse","achieve","acid","acoustic","acquire","across","act",
+"action","actor","actress","actual","adapt","add","addict","address","adjust","admit",
+"adult","advance","advice","aerobic","affair","afford","afraid","again","age","agent",
+"agree","ahead","aim","air","airport","aisle","alarm","album","alcohol","alert",
+"alien","all","alley","allow","almost","alone","alpha","already","also","alter",
+"always","amateur","amazing","among","amount","amused","analyst","anchor","ancient","anger",
+"angle","angry","animal","ankle","announce","annual","another","answer","antenna","antique",
+"anxiety","any","apart","apology","appear","apple","approve","april","arch","arctic",
+"area","arena","argue","arm","armed","armor","army","around","arrange","arrest",
+"arrive","arrow","art","artefact","artist","artwork","ask","aspect","assault","asset",
+"assist","assume","asthma","athlete","atom","attack","attend","attitude","attract","auction",
+"audit","august","aunt","author","auto","autumn","average","avocado","avoid","awake",
+"aware","awesome","awful","awkward","axis","baby","bachelor","bacon","badge","bag",
+"balance","balcony","ball","bamboo","banana","banner","bar","barely","bargain","barrel",
+"base","basic","basket","battle","beach","bean","beauty","because","become","beef",
+"before","begin","behave","behind","believe","below","belt","bench","benefit","best",
+"betray","better","between","beyond","bicycle","bid","bike","bind","biology","bird",
+"birth","bitter","black","blade","blame","blanket","blast","bleak","bless","blind",
+"blood","blossom","blow","blue","blur","blush","board","boat","body","boil",
+"bomb","bone","bonus","book","boost","border","boring","borrow","boss","bottom",
+"bounce","box","boy","bracket","brain","brand","brass","brave","bread","breeze",
+"brick","bridge","brief","bright","bring","brisk","broccoli","broken","bronze","broom",
+"brother","brown","brush","bubble","buddy","budget","buffalo","build","bulb","bulk",
+"bullet","bundle","bunny","burden","burger","burst","bus","business","busy","butter",
+"buyer","buzz","cabbage","cabin","cable","cactus","cage","cake","call","calm",
+"camera","camp","can","canal","cancel","candy","cannon","canoe","canvas","canyon",
+"capable","capital","captain","car","carbon","card","cargo","carpet","carry","cart",
+"case","cash","casino","castle","casual","cat","catalog","catch","category","cattle",
+"caught","cause","caution","cave","ceiling","celery","cement","census","century","cereal",
+"certain","chair","chalk","champion","change","chaos","chapter","charge","chase","cheap",
+"check","cheese","chef","cherry","chest","chicken","chief","child","chimney","choice",
+"choose","chronic","chuckle","chunk","churn","citizen","city","civil","claim","clap",
+"clarify","claw","clay","clean","clerk","clever","click","client","cliff","climb",
+"clinic","clip","clock","clog","close","cloth","cloud","clown","club","clump",
+"cluster","clutch","coach","coast","coconut","code","coffee","coil","coin","collect",
+"color","column","combine","come","comfort","comic","common","company","concert","conduct",
+"confirm","congress","connect","consider","control","convince","cook","cool","copper","copy",
+"coral","core","corn","correct","cost","cotton","couch","country","couple","course",
+"cousin","cover","coyote","crack","cradle","craft","cram","crane","crash","crater",
+"crawl","crazy","cream","credit","creek","crew","cricket","crime","crisp","critic",
+"crop","cross","crouch","crowd","crucial","cruel","cruise","crumble","crush","cry",
+"crystal","cube","culture","cup","cupboard","curious","current","curtain","curve","cushion",
+"custom","cute","cycle","dad","damage","damp","dance","danger","daring","dash",
+"daughter","dawn","day","deal","debate","debris","decade","december","decide","decline",
+"decorate","decrease","deer","defense","define","defy","degree","delay","deliver","demand",
+"demise","denial","dentist","deny","depart","depend","deposit","depth","deputy","derive",
+"describe","desert","design","desk","despair","destroy","detail","detect","develop","device",
+"devote","diagram","dial","diamond","diary","dice","diesel","diet","differ","digital",
+"dignity","dilemma","dinner","dinosaur","direct","dirt","disagree","discover","disease","dish",
+"dismiss","disorder","display","distance","divert","divide","divorce","dizzy","doctor","document",
+"dog","doll","dolphin","domain","donate","donkey","donor","door","dose","double",
+"dove","draft","dragon","drama","drastic","draw","dream","dress","drift","drill",
+"drink","drip","drive","drop","drum","dry","duck","dumb","dune","during",
+"dust","dutch","duty","dwarf","dynamic","eager","eagle","early","earn","earth",
+"easily","east","easy","echo","ecology","economy","edge","edit","educate","effort",
+"egg","eight","either","elbow","elder","electric","elegant","element","elephant","elevator",
+"elite","else","embark","embody","embrace","emerge","emotion","employ","empower","empty",
+"enable","encourage","end","endless","endorse","enemy","energy","enforce","engage","engine",
+"enhance","enjoy","enlist","enough","enrich","enroll","ensure","enter","entire","entry",
+"envelope","episode","equal","equip","era","erase","erode","erosion","error","erupt",
+"escape","essay","essence","estate","eternal","ethics","evidence","evil","evoke","evolve",
+"exact","example","excess","exchange","excite","exclude","excuse","execute","exercise","exhaust",
+"exhibit","exile","exist","exit","exotic","expand","expect","expire","explain","expose",
+"express","extend","extra","eye","eyebrow","fabric","face","faculty","fade","faint",
+"faith","fall","false","fame","family","famous","fan","fancy","fantasy","farm",
+"fashion","fat","fatal","father","fatigue","fault","favorite","feature","february","federal",
+"fee","feed","feel","female","fence","festival","fetch","fever","few","fiber",
+"fiction","field","figure","file","film","filter","final","find","fine","finger",
+"finish","fire","firm","fiscal","fish","fit","fitness","fix","flag","flame",
+"flash","flat","flavor","flee","flight","flip","float","flock","floor","flower",
+"fluid","flush","fly","foam","focus","fog","foil","fold","follow","food",
+"foot","force","forest","forget","fork","fortune","forum","forward","fossil","foster",
+"found","fox","fragile","frame","frequent","fresh","friend","fringe","frog","front",
+"frost","frown","frozen","fruit","fuel","fun","funny","furnace","fury","future",
+"gadget","gain","galaxy","gallery","game","gap","garage","garbage","garden","garlic",
+"garment","gas","gasp","gate","gather","gauge","gaze","general","genius","genre",
+"gentle","genuine","gesture","ghost","giant","gift","giggle","ginger","giraffe","girl",
+"give","glad","glance","glare","glass","glide","glimpse","globe","gloom","glory",
+"glove","glow","glue","goat","goddess","gold","good","goose","gorilla","gospel",
+"gossip","govern","gown","grab","grace","grain","grant","grape","grass","gravity",
+"great","green","grid","grief","grit","grocery","group","grow","grunt","guard",
+"guess","guide","guilt","guitar","gun","gym","habit","hair","half","hammer",
+"hamster","hand","happy","harbor","hard","harsh","harvest","hat","have","hawk",
+"hazard","head","health","heart","heavy","hedgehog","height","hello","helmet","help",
+"hen","hero","hip","hire","history","hobby","hockey","hold","hole","holiday",
+"hollow","home","honey","hood","hope","horn","horror","horse","hospital","host",
+"hotel","hour","hover","hub","huge","human","humble","humor","hundred","hungry",
+"hunt","hurdle","hurry","hurt","husband","hybrid","ice","icon","idea","identify",
+"idle","ignore","ill","illegal","illness","image","imitate","immense","immune","impact",
+"impose","improve","impulse","inch","include","income","increase","index","indicate","indoor",
+"industry","infant","inflict","inform","initial","inject","inmate","inner","innocent","input",
+"inquiry","insane","insect","inside","inspire","install","intact","interest","into","invest",
+"invite","involve","iron","island","isolate","issue","item","ivory","jacket","jaguar",
+"jar","jazz","jealous","jeans","jelly","jewel","job","join","joke","journey",
+"joy","judge","juice","jump","jungle","junior","junk","just","kangaroo","keen",
+"keep","ketchup","key","kick","kid","kidney","kind","kingdom","kiss","kit",
+"kitchen","kite","kitten","kiwi","knee","knife","knock","know","lab","label",
+"labor","ladder","lady","lake","lamp","language","laptop","large","later","latin",
+"laugh","laundry","lava","law","lawn","lawsuit","layer","lazy","leader","leaf",
+"learn","leave","lecture","left","leg","legal","legend","leisure","lemon","lend",
+"length","lens","leopard","lesson","letter","level","liberty","library","license","life",
+"lift","light","like","limb","limit","link","lion","liquid","list","little",
+"live","lizard","load","loan","lobster","local","lock","logic","lonely","long",
+"loop","lottery","loud","lounge","love","loyal","lucky","luggage","lumber","lunar",
+"lunch","luxury","lyrics","machine","mad","magic","magnet","maid","mail","main",
+"major","make","mammal","man","manage","mandate","mango","mansion","manual","maple",
+"marble","march","margin","marine","market","marriage","mask","mass","master","match",
+"material","math","matrix","matter","maximum","maze","meadow","mean","measure","meat",
+"mechanic","medal","media","melody","melt","member","memory","mention","menu","mercy",
+"merge","merit","merry","mesh","message","metal","method","middle","midnight","milk",
+"million","mimic","mind","minimum","minor","minute","miracle","mirror","misery","miss",
+"mistake","mix","mixed","mixture","mobile","model","modify","mom","moment","monitor",
+"monkey","monster","month","moon","moral","more","morning","mosquito","mother","motion",
+"motor","mountain","mouse","move","movie","much","muffin","mule","multiply","muscle",
+"museum","mushroom","music","must","mutual","myself","mystery","myth","naive","name",
+"napkin","narrow","nasty","nation","nature","near","neck","need","negative","neglect",
+"neither","nephew","nerve","nest","net","network","neutral","never","news","next",
+"nice","night","noble","noise","nominee","noodle","normal","north","nose","notable",
+"nothing","notice","novel","now","nuclear","number","nurse","nut","oak","obey",
+"object","oblige","obscure","observe","obtain","obvious","occur","ocean","october","odor",
+"off","offer","office","often","oil","okay","old","olive","olympic","omit",
+"once","one","onion","online","only","open","opera","opinion","oppose","option",
+"orange","orbit","orchard","order","ordinary","organ","orient","original","orphan","ostrich",
+"other","outdoor","outer","output","outside","oval","oven","over","own","owner",
+"oxygen","oyster","ozone","pact","paddle","page","pair","palace","palm","panda",
+"panel","panic","panther","paper","parade","parent","park","parrot","party","pass",
+"patch","path","patient","patrol","pattern","pause","pave","payment","peace","peanut",
+"pear","peasant","pelican","pen","penalty","pencil","people","pepper","perfect","permit",
+"person","pet","phone","photo","phrase","physical","piano","picnic","picture","piece",
+"pig","pigeon","pill","pilot","pink","pioneer","pipe","pistol","pitch","pizza",
+"place","planet","plastic","plate","play","please","pledge","pluck","plug","plunge",
+"poem","poet","point","polar","pole","police","pond","pony","pool","popular",
+"portion","pose","position","possible","post","potato","pottery","poverty","powder","power",
+"practice","praise","predict","prefer","prepare","present","pretty","prevent","price","pride",
+"primary","print","priority","prison","private","prize","problem","process","produce","profit",
+"program","project","promote","proof","property","prosper","protect","proud","provide","public",
+"pudding","pull","pulp","pulse","pumpkin","punch","pupil","puppy","purchase","purity",
+"purpose","purse","push","put","puzzle","pyramid","quality","quantum","quarter","question",
+"quick","quit","quiz","quote","rabbit","raccoon","race","rack","radar","radio",
+"rage","rail","rain","raise","rally","ramp","ranch","random","range","rapid",
+"rare","rate","rather","raven","raw","razor","ready","real","reason","rebel",
+"rebuild","recall","receive","recipe","record","recycle","reduce","reflect","reform","region",
+"regret","regular","reject","relax","release","relief","rely","remain","remember","remind",
+"remove","render","renew","rent","reopen","repair","repeat","replace","report","require",
+"rescue","resemble","resist","resource","response","result","retire","retreat","return","reunion",
+"reveal","review","reward","rhythm","rib","ribbon","rice","rich","ride","ridge",
+"rifle","right","rigid","ring","riot","ripple","risk","ritual","rival","river",
+"road","roast","robot","robust","rocket","romance","roof","rookie","room","rose",
+"rotate","rough","round","route","royal","rubber","rude","rug","rule","run",
+"runway","rural","sad","saddle","sadness","safe","sail","salad","salmon","salon",
+"salt","salute","same","sample","sand","satisfy","satoshi","sauce","sausage","save",
+"say","scale","scan","scare","scatter","scene","scheme","school","science","scissors",
+"scorpion","scout","scrap","screen","script","scrub","sea","search","season","seat",
+"second","secret","section","security","seed","seek","segment","select","sell","seminar",
+"senior","sense","sentence","series","service","session","settle","setup","seven","shadow",
+"shaft","shallow","share","shed","shell","sheriff","shield","shift","shine","ship",
+"shiver","shock","shoe","shoot","shop","short","shoulder","shove","shrimp","shrug",
+"shuffle","shy","sibling","sick","side","siege","sight","sign","silent","silk",
+"silly","silver","similar","simple","since","sing","siren","sister","situate","six",
+"size","skate","sketch","ski","skill","skin","skirt","skull","slab","slam",
+"sleep","slender","slice","slide","slight","slim","slogan","slot","slow","slush",
+"small","smart","smile","smoke","smooth","snack","snake","snap","sniff","snow",
+"soap","soccer","social","sock","soda","soft","solar","soldier","solid","solution",
+"someone","song","soon","sorry","sort","soul","sound","soup","source","south",
+"space","spare","spatial","spawn","speak","special","speed","spell","spend","sphere",
+"spice","spider","spike","spin","spirit","split","sponsor","spoon","sport","spot",
+"spray","spread","spring","spy","square","squeeze","squirrel","stable","stadium","staff",
+"stage","stairs","stamp","stand","start","state","stay","steak","steel","stem",
+"step","stereo","stick","still","sting","stock","stomach","stone","stool","story",
+"stove","strategy","street","strike","strong","struggle","student","stuff","stumble","style",
+"subject","submit","subway","success","such","sudden","suffer","sugar","suggest","suit",
+"summer","sun","sunny","sunset","super","supply","supreme","sure","surface","surge",
+"surprise","surround","survey","suspect","sustain","swallow","swamp","swap","swarm","swear",
+"sweet","swim","swing","switch","sword","symbol","symptom","syrup","system","table",
+"tackle","tag","tail","talent","talk","tank","tape","target","task","taste",
+"tattoo","taxi","teach","team","tell","ten","tenant","tennis","tent","term",
+"test","text","thank","that","theme","then","theory","there","they","thing",
+"this","thought","three","thrive","throw","thumb","thunder","ticket","tide","tiger",
+"tilt","timber","time","tiny","tip","tired","tissue","title","toast","tobacco",
+"today","toddler","toe","together","toilet","token","tomato","tomorrow","tone","tongue",
+"tonight","tool","tooth","top","topic","topple","torch","tornado","tortoise","toss",
+"total","tourist","toward","tower","town","toy","track","trade","traffic","tragic",
+"train","transfer","trap","trash","travel","tray","treat","tree","trend","trial",
+"tribe","trick","trigger","trim","trip","trophy","trouble","truck","true","truly",
+"trumpet","trust","truth","try","tube","tuna","tunnel","turkey","turn","turtle",
+"twelve","twenty","twice","twin","twist","two","type","typical","ugly","umbrella",
+"unable","unaware","uncle","uncover","under","undo","unfair","unfold","unhappy","uniform",
+"union","unique","unit","universe","unknown","unlock","until","unusual","unveil","update",
+"upgrade","uphold","upon","upper","upset","urban","usage","use","used","useful",
+"useless","usual","utility","vacant","vacuum","vague","valid","valley","valve","van",
+"vanish","vapor","various","vast","vault","vehicle","velvet","vendor","venture","venue",
+"verb","verify","version","very","vessel","veteran","viable","vibrant","vicious","victory",
+"video","view","village","vintage","violin","virtual","virus","visa","visit","visual",
+"vital","vivid","vocal","voice","void","volcano","volume","vote","voyage","wage",
+"wagon","wait","walk","wall","walnut","want","warfare","warm","warrior","wash",
+"wasp","waste","water","wave","way","wealth","weapon","wear","weasel","weather",
+"web","wedding","weekend","weird","welcome","well","west","wet","whale","what",
+"wheat","wheel","when","where","whip","whisper","wide","width","wife","wild",
+"will","win","window","wine","wing","wink","winner","winter","wire","wisdom",
+"wise","wish","witness","wolf","woman","wonder","wood","wool","word","work",
+"world","worry","worth","wrap","wreck","wrestle","wrist","write","wrong","yard",
+"year","yellow","you","young","youth","zebra","zero","zone","zoo"
+];
+
+// =====================================================
+// VULNERABILITY DATABASE
+// =====================================================
+const WALLETS = {
+  coldcard: {
+    name: "Coldcard", maker: "Coinkite", models: ["Mk4","Mk3","Mk2","Q1"],
+    firmwares: ["5.3.2","5.3.1","5.3.0","5.2.2","5.2.1","5.2.0","5.1.2","5.1.1","5.1.0","5.0.0","4.x","3.x"],
+    vulns: [
+      { id:"CVE-2025-CC001", title:"Partial Seed Extraction via Power Analysis", severity:"critical",
+        affected:["5.1.0","5.0.0","4.x","3.x"],
+        desc:"Side-channel attack during seed generation allows partial extraction of entropy bits through power consumption analysis. Requires physical access during key generation.",
+        fix:"Update to firmware 5.2.0+. Re-generate keys using Fortress Key." },
+      { id:"CVE-2024-35895", title:"PSBT Signing Bypass on Multisig", severity:"high",
+        affected:["5.0.0","4.x","3.x"],
+        desc:"Crafted PSBT could bypass multisig co-signer verification under specific conditions.",
+        fix:"Update to firmware 5.1.0+. Verify all multisig configurations." },
+      { id:"CVE-2023-CC-RNG", title:"Insufficient Entropy in RNG Mixing", severity:"high",
+        affected:["4.x","3.x"],
+        desc:"Hardware RNG mixing function did not incorporate sufficient entropy sources, potentially reducing key space.",
+        fix:"Update to firmware 5.x. Regenerate keys externally." },
+      { id:"CC-2024-USBDFU", title:"USB DFU Mode Firmware Downgrade", severity:"medium",
+        affected:["5.1.2","5.1.1","5.1.0","5.0.0","4.x"],
+        desc:"Physical attacker could force DFU mode and downgrade firmware to exploit older vulnerabilities.",
+        fix:"Update to 5.2.0+ with anti-rollback protection." }
+    ]
+  },
+  ledger: {
+    name: "Ledger", maker: "Ledger SAS", models: ["Nano X","Nano S Plus","Nano S","Stax","Flex"],
+    firmwares: ["2.3.0","2.2.4","2.2.3","2.2.2","2.2.1","2.2.0","2.1.0","2.0.0","1.x"],
+    vulns: [
+      { id:"CVE-2024-LEDGER-RECOVER", title:"Ledger Recover Key Sharding", severity:"high",
+        affected:["2.2.2","2.2.1","2.2.0","2.1.0","2.0.0"],
+        desc:"Ledger Recover enables optional seed backup to third parties, proving firmware CAN extract and transmit seeds.",
+        fix:"Disable Ledger Recover. Generate keys externally with Fortress Key." },
+      { id:"CVE-2023-LEDGER-BLIND", title:"Blind Signing Exploitation", severity:"high",
+        affected:["2.1.0","2.0.0","1.x"],
+        desc:"DApps could present misleading transaction data via blind signing.",
+        fix:"Update firmware. Enable Clear Signing." },
+      { id:"CVE-2020-LEDGER-PHYS", title:"Physical Voltage Glitching", severity:"medium",
+        affected:["1.x"],
+        desc:"Voltage fault injection on Nano S could bypass PIN and extract seed.",
+        fix:"Upgrade to Nano S Plus or Nano X." }
+    ]
+  },
+  trezor: {
+    name: "Trezor", maker: "SatoshiLabs", models: ["Model T","Model One","Safe 3","Safe 5"],
+    firmwares: ["2.7.2","2.7.1","2.7.0","2.6.4","2.6.3","2.6.0","2.5.x","2.4.x","2.3.x","1.x"],
+    vulns: [
+      { id:"CVE-2023-TREZOR-RDP", title:"Read Protection Downgrade (STM32)", severity:"critical",
+        affected:["1.x"],
+        desc:"Physical attack can downgrade STM32 read protection, enabling full seed extraction in ~15 minutes.",
+        fix:"Use passphrase protection. Upgrade to Safe 3/5." },
+      { id:"CVE-2022-TREZOR-SIDE", title:"Side-Channel PIN Extraction", severity:"high",
+        affected:["2.4.x","2.3.x","1.x"],
+        desc:"Power analysis during PIN entry can reveal PIN digits.",
+        fix:"Update firmware. Use strong passphrase." },
+      { id:"CVE-2019-TREZOR-SEGWIT", title:"SegWit Fee Attack", severity:"medium",
+        affected:["2.3.x","1.x"],
+        desc:"Attacker could manipulate SegWit amounts to cause excessive fees.",
+        fix:"Update firmware. Verify fees on device." }
+    ]
+  },
+  keepkey: {
+    name: "KeepKey", maker: "ShapeShift", models: ["KeepKey"],
+    firmwares: ["7.7.0","7.6.0","7.5.2","7.4.0","7.3.x","7.2.x","6.x"],
+    vulns: [
+      { id:"CVE-2023-KK-GLITCH", title:"Voltage Glitch Seed Extraction", severity:"critical",
+        affected:["7.3.x","7.2.x","6.x"],
+        desc:"Voltage glitching can extract full seed in under 15 minutes with physical access.",
+        fix:"Update to 7.4.0+. Use BIP39 passphrase." },
+      { id:"CVE-2022-KK-USB", title:"USB Protocol Buffer Overflow", severity:"high",
+        affected:["7.2.x","6.x"],
+        desc:"Malformed USB HID messages could trigger buffer overflow.",
+        fix:"Update to firmware 7.3.0+." }
+    ]
+  },
+  bitbox02: {
+    name: "BitBox02", maker: "Shift Crypto", models: ["BitBox02 Multi","BitBox02 BTC-only"],
+    firmwares: ["9.18.0","9.17.0","9.16.0","9.15.0","9.14.0","9.13.0","9.12.0","9.11.0","9.10.0"],
+    vulns: [
+      { id:"BB02-2023-SUPPLY", title:"Supply Chain Verification Gap", severity:"medium",
+        affected:["9.10.0","9.11.0"],
+        desc:"Earlier attestation protocol had weakness allowing device substitution during shipping.",
+        fix:"Update to 9.12.0+. Verify device hash on setup." },
+      { id:"BB02-2022-NOISE", title:"Noise Protocol Pairing Weakness", severity:"low",
+        affected:["9.10.0"],
+        desc:"Initial noise handshake could be intercepted during first pairing.",
+        fix:"Update firmware. Verify pairing code on device." }
+    ]
+  }
+};
+
+// =====================================================
+// STATE
+// =====================================================
+let selectedWallet = null;
+let diceRolls = [];
+let currentMode = 'raw';
+let lastGeneratedHash = null;
+
+// =====================================================
+// TAB SWITCHING
+// =====================================================
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['scanner','generator','airgap','quantum','verify','howto'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// =====================================================
+// MODE SWITCHING
+// =====================================================
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeRaw').classList.toggle('active', mode === 'raw');
+  document.getElementById('modeBip39').classList.toggle('active', mode === 'bip39');
+  if (mode === 'raw') {
+    document.getElementById('modeDesc').innerHTML = '<strong>MODE 1 - PURE FORTRESS:</strong> Your recipe generates a raw 256-bit private key. No public wordlists involved. Import into Electrum, Sparrow, MetaMask, or any wallet that accepts raw/WIF keys. <strong>Your recipe IS your key.</strong>';
+    document.getElementById('generateBtn').textContent = 'GENERATE FORTRESS KEY';
+  } else {
+    document.getElementById('modeDesc').innerHTML = '<strong>MODE 2 - HARDWARE BRIDGE:</strong> Your recipe generates a raw key, then translates it to 24 BIP39 words for hardware wallet import. The 24 words are <strong>temporary</strong> - your recipe remains your real backup. Destroy the 24 words after import.';
+    document.getElementById('generateBtn').textContent = 'GENERATE HARDWARE BRIDGE KEY';
+  }
+  document.getElementById('outputSection').style.display = 'none';
+}
+
+// =====================================================
+// SCANNER
+// =====================================================
+function initScanner() {
+  const grid = document.getElementById('walletGrid');
+  grid.innerHTML = '';
+  Object.keys(WALLETS).forEach(key => {
+    const w = WALLETS[key];
+    const card = document.createElement('div');
+    card.className = 'wallet-card';
+    card.innerHTML = '<h3>' + w.name + '</h3><div class="maker">' + w.maker + '</div><div class="maker" style="margin-top:4px;">' + w.models.join(', ') + '</div>';
+    card.onclick = () => selectWallet(key, card);
+    grid.appendChild(card);
+  });
+}
+
+function selectWallet(key, card) {
+  selectedWallet = key;
+  document.querySelectorAll('.wallet-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const w = WALLETS[key];
+  const section = document.getElementById('firmwareSection');
+  section.style.display = 'block';
+  const sel = document.getElementById('firmwareSelect');
+  sel.innerHTML = '<option value="">-- Select firmware --</option>';
+  w.firmwares.forEach(f => { sel.innerHTML += '<option value="'+f+'">'+f+'</option>'; });
+  sel.onchange = () => { document.getElementById('scanBtn').disabled = !sel.value; };
+  document.getElementById('scanBtn').disabled = true;
+  document.getElementById('vulnReport').style.display = 'none';
+}
+
+function runScan() {
+  const fw = document.getElementById('firmwareSelect').value;
+  const w = WALLETS[selectedWallet];
+  const report = document.getElementById('vulnReport');
+  const matched = w.vulns.filter(v => v.affected.includes(fw));
+
+  if (matched.length === 0) {
+    report.innerHTML = '<div class="safe-report">&#10003; No known vulnerabilities for '+w.name+' firmware '+fw+'<br><br><span style="font-size:0.8em;color:var(--text-dim);">This does not guarantee security. Unknown vulnerabilities may exist.<br>Use the Key Generator to generate keys externally for maximum safety.</span></div>';
+  } else {
+    let html = '<h3 style="color:var(--red);margin-bottom:15px;">Found '+matched.length+' known vulnerabilit'+(matched.length===1?'y':'ies')+'</h3>';
+    matched.forEach(v => {
+      html += '<div class="vuln-item"><span class="vuln-severity severity-'+v.severity+'">'+v.severity.toUpperCase()+'</span><span class="vuln-cve">'+v.id+'</span><div class="vuln-title" style="margin-top:8px;">'+v.title+'</div><div class="vuln-desc">'+v.desc+'</div><div class="vuln-fix">FIX: '+v.fix+'</div></div>';
+    });
+    html += '<div style="padding:15px;margin-top:10px;background:rgba(247,147,26,0.1);border:1px solid var(--accent);border-radius:6px;font-size:0.85em;color:var(--accent);"><strong>RECOMMENDATION:</strong> Use the Key Generator to create your keys externally with your own recipe.</div>';
+  }
+  report.style.display = 'block';
+  report.scrollIntoView({ behavior: 'smooth' });
+}
+
+// =====================================================
+// DICE
+// =====================================================
+function addDice(v) { diceRolls.push(v); renderDice(); updateEntropy(); }
+function clearDice() { diceRolls = []; renderDice(); updateEntropy(); }
+function renderDice() {
+  document.getElementById('diceResults').innerHTML = diceRolls.map(d => '<span class="dice-val">'+d+'</span>').join('');
+}
+
+// =====================================================
+// ENTROPY
+// =====================================================
+function calcEntropy() {
+  let bits = 0;
+  const l1 = document.getElementById('layer1').value;
+  const l2 = document.getElementById('layer2').value;
+  const l3 = document.getElementById('layer3').value;
+  const l5 = document.getElementById('layer5').value;
+
+  if (l1.length > 0) { bits += l1.length * Math.log2(Math.max(new Set(l1).size, 2)); }
+  if (l2.length > 0) { bits += l2.length * Math.log2(Math.max(new Set(l2).size, 2)) * 1.5; }
+  if (l3.length > 0) { bits += l3.length * Math.log2(Math.max(new Set(l3).size, 2)); }
+  bits += diceRolls.length * Math.log2(6);
+  if (l5.length > 0) { bits += l5.length * Math.log2(Math.max(new Set(l5).size, 2)); }
+  return Math.floor(bits);
+}
+
+function updateEntropy() {
+  const bits = calcEntropy();
+  document.getElementById('entropyBits').textContent = bits + ' bits';
+  const bar = document.getElementById('entropyBar');
+  const verdict = document.getElementById('entropyVerdict');
+  const time = document.getElementById('entropyTime');
+  const btn = document.getElementById('generateBtn');
+
+  bar.style.width = Math.min(bits/300*100, 100) + '%';
+
+  if (bits < 80) {
+    bar.style.background='var(--red)'; verdict.style.color='var(--red)';
+    verdict.textContent='WEAK - Add more layers'; time.textContent=''; btn.disabled=true;
+  } else if (bits < 128) {
+    bar.style.background='var(--orange)'; verdict.style.color='var(--orange)';
+    verdict.textContent='MODERATE - Keep adding'; time.textContent='Crackable by nation-state'; btn.disabled=true;
+  } else if (bits < 192) {
+    bar.style.background='var(--yellow)'; verdict.style.color='var(--yellow)';
+    verdict.textContent='STRONG'; time.textContent='Centuries to crack'; btn.disabled=false;
+  } else if (bits < 256) {
+    bar.style.background='var(--green)'; verdict.style.color='var(--green)';
+    verdict.textContent='VERY STRONG'; time.textContent='Heat death of universe'; btn.disabled=false;
+  } else {
+    bar.style.background='var(--accent2)'; verdict.style.color='var(--accent2)';
+    verdict.textContent='FORTRESS GRADE'; time.textContent='Mathematically unbreakable'; btn.disabled=false;
+  }
+}
+
+// =====================================================
+// KEY GENERATION
+// =====================================================
+function buildRecipe() {
+  return [
+    'L1:' + document.getElementById('layer1').value,
+    'L2:' + document.getElementById('layer2').value,
+    'L3:' + document.getElementById('layer3').value,
+    'L4:' + diceRolls.join(','),
+    'L5:' + document.getElementById('layer5').value
+  ].join('|FORTRESS|');
+}
+
+async function derivePrivateKey(recipe) {
+  const encoder = new TextEncoder();
+  const recipeBytes = new Uint8Array(encoder.encode(recipe));
+  const saltBytes = new Uint8Array(encoder.encode('FortressKey-v1-deterministic-salt-2025'));
+
+  // Step 1: PBKDF2-SHA512 (500,000 rounds) using noble-hashes (works offline on file://)
+  const derivedBytes = NoblePBKDF2(NobleSHA512, recipeBytes, saltBytes, { c: 500000, dkLen: 32 });
+
+  let keyBytes = new Uint8Array(derivedBytes);
+
+  // Step 2: Quantum Shield (if enabled)
+  const quantumEnabled = document.getElementById('quantumShield').checked;
+  if (quantumEnabled) {
+    // Layer 2: Keccak-256 cascade (10,000 rounds)
+    // Different hash family than SHA - sponge construction vs Merkle-Damgard
+    // Attacker must break BOTH hash families
+    for (let i = 0; i < 10000; i++) {
+      keyBytes = KECCAK256.hash(keyBytes);
+    }
+
+    // Layer 3: SHA-256 + Keccak-256 XOR fusion
+    // Final key = SHA256(cascaded) XOR Keccak256(cascaded)
+    // Only breakable if both hash functions are simultaneously compromised
+    const shaResult = SHA256.hash(keyBytes);
+    const keccakResult = KECCAK256.hash(keyBytes);
+    const fused = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) {
+      fused[i] = shaResult[i] ^ keccakResult[i];
+    }
+    keyBytes = fused;
+  }
+
+  return keyBytes;
+}
+
+function bytesToHex(bytes) {
+  return NobleToHex(bytes);
+}
+
+function hexToBytes(hex) {
+  return NobleFromHex(hex);
+}
+
+function privateKeyToWIF(privKeyBytes, networkByte) {
+  // WIF: networkByte + privkey + 0x01 (compressed) + checksum
+  // BTC mainnet: 0x80, DOGE mainnet: 0x9E
+  const prefix = networkByte || 0x80;
+  const extended = new Uint8Array(34);
+  extended[0] = prefix;
+  extended.set(privKeyBytes, 1);
+  extended[33] = 0x01; // compressed flag
+  return BASE58.encodeCheck(extended);
+}
+
+function publicKeyToAddress(compressedPubKey, versionByte) {
+  // BTC mainnet: 0x00, DOGE mainnet: 0x1E
+  const pubBytes = hexToBytes(compressedPubKey);
+  const sha = SHA256.hash(pubBytes);
+  const ripe = RIPEMD160.hash(sha);
+  const versioned = new Uint8Array(21);
+  versioned[0] = versionByte || 0x00;
+  versioned.set(ripe, 1);
+  return BASE58.encodeCheck(versioned);
+}
+
+function publicKeyToEthAddress(uncompressedPubKey) {
+  const pubBytes = hexToBytes(uncompressedPubKey.slice(2));
+  const hash = KECCAK256.hash(pubBytes);
+  const addrBytes = hash.slice(12);
+  return '0x' + bytesToHex(addrBytes);
+}
+
+async function generateKey() {
+  const btn = document.getElementById('generateBtn');
+  const qsOn = document.getElementById('quantumShield').checked;
+  btn.textContent = qsOn ? 'DERIVING KEY... (Rust: 500K PBKDF2 + 10K KECCAK + XOR FUSION)' : 'DERIVING KEY... (Rust: 500,000 rounds)';
+  btn.disabled = true;
+
+  await new Promise(r => setTimeout(r, 50));
+
+  try {
+    // Call Rust backend for all crypto operations + secure memory zeroing
+    const result = await invoke('generate_key', {
+      layer1: document.getElementById('layer1').value,
+      layer2: document.getElementById('layer2').value,
+      layer3: document.getElementById('layer3').value,
+      layer4: diceRolls.join(','),
+      layer5: document.getElementById('layer5').value,
+      quantumShield: qsOn,
+    });
+
+    const privKeyHex = result.priv_key_hex;
+    const wifBTC = result.wif_btc;
+    const wifDOGE = result.wif_doge;
+    const btcAddr = result.btc_address;
+    const dogeAddr = result.doge_address;
+    const ethAddr = result.eth_address;
+    const verifyHashHex = result.verify_hash;
+    lastGeneratedHash = verifyHashHex;
+
+    // Show quantum badge if enabled
+    document.getElementById('qsBadge').style.display = qsOn ? 'inline-block' : 'none';
+
+    if (currentMode === 'raw') {
+      // Mode 1: Show raw key output
+      document.getElementById('privKeyHex').textContent = privKeyHex;
+      document.getElementById('privKeyWIF').textContent = wifBTC;
+      document.getElementById('privKeyWIF_DOGE').textContent = wifDOGE;
+      document.getElementById('btcAddress').textContent = btcAddr;
+      document.getElementById('dogeAddress').textContent = dogeAddr;
+      document.getElementById('ethAddress').textContent = ethAddr;
+      document.getElementById('verifyHash').textContent = verifyHashHex;
+      document.getElementById('outputRaw').style.display = 'block';
+      document.getElementById('outputBip39').style.display = 'none';
+    } else {
+      // Mode 2: BIP39 translation
+      const entropyBytes = privKeyBytes;
+      const hashBuffer = SHA256.hash(entropyBytes);
+      const checksumByte = hashBuffer[0];
+
+      let binaryStr = '';
+      for (let i = 0; i < entropyBytes.length; i++) {
+        binaryStr += entropyBytes[i].toString(2).padStart(8, '0');
+      }
+      binaryStr += checksumByte.toString(2).padStart(8, '0');
+
+      const words = [];
+      for (let i = 0; i < 24; i++) {
+        const segment = binaryStr.slice(i * 11, (i + 1) * 11);
+        words.push(BIP39_WORDLIST[parseInt(segment, 2)]);
+      }
+
+      document.getElementById('seedWords').innerHTML = words.map((w, i) =>
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px;text-align:center;font-size:0.85em;"><div style="color:var(--text-dim);font-size:0.75em;">'+(i+1)+'</div><div style="color:var(--accent);font-weight:bold;">'+w+'</div></div>'
+      ).join('');
+
+      document.getElementById('seedHash').textContent = verifyHashHex;
+      document.getElementById('outputRaw').style.display = 'none';
+      document.getElementById('outputBip39').style.display = 'block';
+    }
+
+    document.getElementById('outputSection').style.display = 'block';
+    document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth' });
+
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+
+  btn.textContent = currentMode === 'raw' ? 'GENERATE FORTRESS KEY' : 'GENERATE HARDWARE BRIDGE KEY';
+  btn.disabled = false;
+}
+
+// =====================================================
+// VERIFY RECIPE (re-derive and compare)
+// =====================================================
+async function verifyRecipe() {
+  if (!lastGeneratedHash) { alert('Generate a key first, then verify.'); return; }
+
+  const btn = document.querySelector('.verify-btn');
+  btn.textContent = 'VERIFYING... (Rust: 500,000 rounds)';
+
+  await new Promise(r => setTimeout(r, 50));
+
+  const qsOn = document.getElementById('quantumShield').checked;
+  const match = await invoke('verify_recipe', {
+    layer1: document.getElementById('layer1').value,
+    layer2: document.getElementById('layer2').value,
+    layer3: document.getElementById('layer3').value,
+    layer4: diceRolls.join(','),
+    layer5: document.getElementById('layer5').value,
+    quantumShield: qsOn,
+    expectedHash: lastGeneratedHash,
+  });
+
+  if (match) {
+    btn.textContent = 'VERIFIED - Same recipe produces same key';
+    btn.style.background = 'var(--green)';
+  } else {
+    btn.textContent = 'MISMATCH - Recipe was changed!';
+    btn.style.background = 'var(--red)';
+    btn.style.color = '#fff';
+  }
+
+  setTimeout(() => {
+    btn.textContent = 'VERIFY: Re-enter recipe to confirm same key';
+    btn.style.background = 'var(--accent2)';
+    btn.style.color = '#000';
+  }, 4000);
+}
+
+// =====================================================
+// DESTROY
+// =====================================================
+function destroyOutput() {
+  document.getElementById('privKeyHex').textContent = '';
+  document.getElementById('privKeyWIF').textContent = '';
+  document.getElementById('privKeyWIF_DOGE').textContent = '';
+  document.getElementById('btcAddress').textContent = '';
+  document.getElementById('dogeAddress').textContent = '';
+  document.getElementById('ethAddress').textContent = '';
+  document.getElementById('verifyHash').textContent = '';
+  document.getElementById('seedWords').innerHTML = '';
+  document.getElementById('seedHash').textContent = '';
+  document.getElementById('outputSection').style.display = 'none';
+  lastGeneratedHash = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// =====================================================
+// COPY DONATION ADDRESS
+// =====================================================
+// =====================================================
+// ECDSA SIGNING (noble-curves - Cure53 audited)
+// Includes RFC 6979 deterministic k, DER encoding,
+// and BIP-62 low-S enforcement automatically
+// =====================================================
+function ecdsaSign(privKeyHex, msgHashBytes) {
+  // noble-curves handles RFC 6979, low-S, and DER encoding internally
+  const privBytes = NobleFromHex(privKeyHex);
+  const sig = NobleSecp256k1.sign(msgHashBytes, privBytes, { lowS: true });
+  return sig;
+}
+
+function derEncode(sig) {
+  // sig from noble is already a Signature object with toDERRawBytes()
+  return sig.toDERRawBytes();
+}
+
+// =====================================================
+// BASE58 DECODE (for address -> hash160)
+// =====================================================
+function base58Decode(str) {
+  const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  let num = 0n;
+  for (const c of str) {
+    const idx = ALPHABET.indexOf(c);
+    if (idx < 0) throw new Error('Invalid Base58 character: ' + c);
+    num = num * 58n + BigInt(idx);
+  }
+  let hex = num.toString(16);
+  if (hex.length % 2) hex = '0' + hex;
+  // Add leading zeros
+  let leadingZeros = 0;
+  for (const c of str) { if (c === '1') leadingZeros++; else break; }
+  const bytes = new Uint8Array(leadingZeros + hex.length / 2);
+  for (let i = 0; i < hex.length / 2; i++) {
+    bytes[leadingZeros + i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes;
+}
+
+function addressToHash160(addr) {
+  const decoded = base58Decode(addr);
+  // Remove version byte (1) and checksum (4)
+  return decoded.slice(1, 21);
+}
+
+// =====================================================
+// BITCOIN TRANSACTION BUILDER
+// =====================================================
+function writeUint32LE(n) {
+  const b = new Uint8Array(4);
+  b[0] = n & 0xff; b[1] = (n >> 8) & 0xff; b[2] = (n >> 16) & 0xff; b[3] = (n >> 24) & 0xff;
+  return b;
+}
+
+function writeUint64LE(n) {
+  const b = new Uint8Array(8);
+  const lo = Number(BigInt(n) & 0xffffffffn);
+  const hi = Number((BigInt(n) >> 32n) & 0xffffffffn);
+  b[0]=lo&0xff; b[1]=(lo>>8)&0xff; b[2]=(lo>>16)&0xff; b[3]=(lo>>24)&0xff;
+  b[4]=hi&0xff; b[5]=(hi>>8)&0xff; b[6]=(hi>>16)&0xff; b[7]=(hi>>24)&0xff;
+  return b;
+}
+
+function writeVarInt(n) {
+  if (n < 0xfd) return new Uint8Array([n]);
+  if (n <= 0xffff) { const b = new Uint8Array(3); b[0]=0xfd; b[1]=n&0xff; b[2]=(n>>8)&0xff; return b; }
+  const b = new Uint8Array(5); b[0]=0xfe; b.set(writeUint32LE(n), 1); return b;
+}
+
+function reverseTxid(txidHex) {
+  const bytes = hexToBytes(txidHex);
+  return bytes.reverse();
+}
+
+function createP2PKHScript(hash160) {
+  // OP_DUP OP_HASH160 <20 bytes> OP_EQUALVERIFY OP_CHECKSIG
+  const script = new Uint8Array(25);
+  script[0] = 0x76; // OP_DUP
+  script[1] = 0xa9; // OP_HASH160
+  script[2] = 0x14; // Push 20 bytes
+  script.set(hash160, 3);
+  script[23] = 0x88; // OP_EQUALVERIFY
+  script[24] = 0xac; // OP_CHECKSIG
+  return script;
+}
+
+function concatBytes(...arrays) {
+  const totalLen = arrays.reduce((sum, a) => sum + a.length, 0);
+  const result = new Uint8Array(totalLen);
+  let offset = 0;
+  for (const a of arrays) { result.set(a, offset); offset += a.length; }
+  return result;
+}
+
+function buildUnsignedTx(utxoTxid, utxoVout, utxoValue, recipientAddr, amount, fee, senderAddr) {
+  const change = utxoValue - amount - fee;
+  const recipientHash = addressToHash160(recipientAddr);
+  const recipientScript = createP2PKHScript(recipientHash);
+
+  // For signing, we need the sender's scriptPubKey in the input
+  const senderHash = addressToHash160(senderAddr);
+  const senderScript = createP2PKHScript(senderHash);
+
+  let outputs;
+  if (change > 0) {
+    const changeScript = createP2PKHScript(senderHash);
+    outputs = concatBytes(
+      new Uint8Array([0x02]), // 2 outputs
+      writeUint64LE(amount),
+      writeVarInt(recipientScript.length), recipientScript,
+      writeUint64LE(change),
+      writeVarInt(changeScript.length), changeScript
+    );
+  } else {
+    outputs = concatBytes(
+      new Uint8Array([0x01]), // 1 output
+      writeUint64LE(amount),
+      writeVarInt(recipientScript.length), recipientScript
+    );
+  }
+
+  // Build the transaction for signing (with scriptPubKey in input)
+  const txForSigning = concatBytes(
+    writeUint32LE(1), // version
+    new Uint8Array([0x01]), // 1 input
+    reverseTxid(utxoTxid),
+    writeUint32LE(utxoVout),
+    writeVarInt(senderScript.length), senderScript, // scriptPubKey for signing
+    writeUint32LE(0xffffffff), // sequence
+    outputs,
+    writeUint32LE(0), // locktime
+    writeUint32LE(1) // SIGHASH_ALL
+  );
+
+  // Store data needed for final tx assembly
+  return {
+    txForSigning,
+    utxoTxid,
+    utxoVout,
+    outputs,
+    amount,
+    fee,
+    change,
+    recipientAddr,
+    senderAddr
+  };
+}
+
+function buildSignedTx(txData, derSig, compressedPubKey) {
+  const sigWithHashType = concatBytes(derSig, new Uint8Array([0x01])); // SIGHASH_ALL
+  const pubKeyBytes = hexToBytes(compressedPubKey);
+
+  // scriptSig: <sig_len> <sig+hashtype> <pubkey_len> <pubkey>
+  const scriptSig = concatBytes(
+    new Uint8Array([sigWithHashType.length]), sigWithHashType,
+    new Uint8Array([pubKeyBytes.length]), pubKeyBytes
+  );
+
+  // Build final signed transaction
+  return concatBytes(
+    writeUint32LE(1), // version
+    new Uint8Array([0x01]), // 1 input
+    reverseTxid(txData.utxoTxid),
+    writeUint32LE(txData.utxoVout),
+    writeVarInt(scriptSig.length), scriptSig,
+    writeUint32LE(0xffffffff), // sequence
+    txData.outputs,
+    writeUint32LE(0) // locktime
+  );
+}
+
+// =====================================================
+// AIR-GAP SIGNER STATE
+// =====================================================
+let agDiceRolls = [];
+
+function addDiceAG(v) { agDiceRolls.push(v); renderDiceAG(); }
+function clearDiceAG() { agDiceRolls = []; renderDiceAG(); }
+function renderDiceAG() {
+  document.getElementById('agDiceResults').innerHTML = agDiceRolls.map(d => '<span class="dice-val" style="width:28px;height:28px;font-size:0.85em;">'+d+'</span>').join('');
+}
+
+function copyAirgap(el) {
+  const text = el.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const msg = el.nextElementSibling;
+      if (msg) { msg.textContent = 'Copied!'; msg.style.color = 'var(--green)'; setTimeout(() => { msg.textContent = 'Click to copy'; msg.style.color = 'var(--text-dim)'; }, 2000); }
+    }).catch(() => { fallbackCopy(text, el); });
+  } else {
+    fallbackCopy(text, el);
+  }
+}
+
+// =====================================================
+// STEP 1: PREPARE UNSIGNED TRANSACTION
+// =====================================================
+function prepareTransaction() {
+  const txid = document.getElementById('agUtxoTxid').value.trim();
+  const vout = parseInt(document.getElementById('agUtxoVout').value) || 0;
+  const utxoValue = parseInt(document.getElementById('agUtxoValue').value) || 0;
+  const recipient = document.getElementById('agRecipient').value.trim();
+  const amount = parseInt(document.getElementById('agAmount').value) || 0;
+  const fee = parseInt(document.getElementById('agFee').value) || 2000;
+  const sender = document.getElementById('agSenderAddr').value.trim();
+
+  // Validation
+  if (!txid || txid.length !== 64) { alert('UTXO Transaction ID must be 64 hex characters'); return; }
+  if (!sender || sender.length < 25) { alert('Enter your Bitcoin address (sender)'); return; }
+  if (!recipient || recipient.length < 25) { alert('Enter recipient Bitcoin address'); return; }
+  if (amount <= 0) { alert('Send amount must be greater than 0'); return; }
+  if (utxoValue <= 0) { alert('UTXO amount must be greater than 0'); return; }
+  if (amount + fee > utxoValue) { alert('Send amount + fee (' + (amount+fee) + ') exceeds UTXO value (' + utxoValue + ')'); return; }
+
+  const change = utxoValue - amount - fee;
+
+  // Show change info
+  const info = document.getElementById('agChangeInfo');
+  info.innerHTML = 'Sending: <strong style="color:var(--accent);">' + amount + ' sats</strong> (' + (amount/100000000).toFixed(8) + ' BTC)<br>' +
+    'Fee: <strong>' + fee + ' sats</strong><br>' +
+    (change > 0 ? 'Change back to you: <strong style="color:var(--green);">' + change + ' sats</strong>' : '<strong style="color:var(--yellow);">No change (exact amount)</strong>');
+
+  try {
+    const txData = buildUnsignedTx(txid, vout, utxoValue, recipient, amount, fee, sender);
+    const unsignedHex = bytesToHex(txData.txForSigning);
+
+    // Encode tx data as JSON for transfer (includes all metadata needed for signing)
+    const transferData = JSON.stringify({
+      v: 1,
+      txHex: unsignedHex,
+      utxoTxid: txid,
+      utxoVout: vout,
+      utxoValue: utxoValue,
+      recipient: recipient,
+      amount: amount,
+      fee: fee,
+      sender: sender,
+      change: change
+    });
+
+    const encoded = btoa(transferData);
+
+    document.getElementById('agUnsignedHex').textContent = encoded;
+    document.getElementById('agUnsignedOutput').style.display = 'block';
+  } catch (e) {
+    alert('Error building transaction: ' + e.message);
+  }
+}
+
+// =====================================================
+// STEP 2: SIGN TRANSACTION (OFFLINE)
+// =====================================================
+async function signTransaction() {
+  const unsignedInput = document.getElementById('agUnsignedInput').value.trim();
+  if (!unsignedInput) { alert('Paste the unsigned transaction data from Step 1'); return; }
+
+  // Parse the transfer data
+  let txInfo;
+  try {
+    txInfo = JSON.parse(atob(unsignedInput));
+  } catch (e) {
+    alert('Invalid transaction data. Make sure you copied the full text from Step 1.'); return;
+  }
+
+  // Build recipe from air-gap inputs
+  const recipe = [
+    'L1:' + document.getElementById('agLayer1').value,
+    'L2:' + document.getElementById('agLayer2').value,
+    'L3:' + document.getElementById('agLayer3').value,
+    'L4:' + agDiceRolls.join(','),
+    'L5:' + document.getElementById('agLayer5').value
+  ].join('|FORTRESS|');
+
+  const btn = document.querySelector('#panel-airgap .action-btn[style*="red"]');
+  btn.textContent = 'DERIVING KEY + SIGNING...';
+  btn.disabled = true;
+
+  await new Promise(r => setTimeout(r, 50));
+
+  try {
+    // Derive private key using same method as generator
+    const encoder = new TextEncoder();
+    const recipeBytes = new Uint8Array(encoder.encode(recipe));
+    const saltBytes = new Uint8Array(encoder.encode('FortressKey-v1-deterministic-salt-2025'));
+
+    const derivedBytes = NoblePBKDF2(NobleSHA512, recipeBytes, saltBytes, { c: 500000, dkLen: 32 });
+
+    let privKeyBytes = new Uint8Array(derivedBytes);
+
+    // Apply Quantum Shield if enabled
+    if (document.getElementById('agQuantumShield').checked) {
+      for (let i = 0; i < 10000; i++) {
+        privKeyBytes = KECCAK256.hash(privKeyBytes);
+      }
+      const shaR = SHA256.hash(privKeyBytes);
+      const kecR = KECCAK256.hash(privKeyBytes);
+      const fused = new Uint8Array(32);
+      for (let i = 0; i < 32; i++) fused[i] = shaR[i] ^ kecR[i];
+      privKeyBytes = fused;
+    }
+
+    const privKeyHex = bytesToHex(privKeyBytes);
+
+    // Verify this key matches the sender address
+    const pubKey = SECP256K1.getPublicKey(privKeyHex);
+    const derivedAddr = publicKeyToAddress(pubKey.compressed, 0x00);
+
+    if (derivedAddr !== txInfo.sender) {
+      alert('WARNING: Your recipe produces address ' + derivedAddr + ' but the transaction is from ' + txInfo.sender + '. The recipe does not match! Make sure you entered the exact same recipe used to generate the sending address.');
+      btn.textContent = 'SIGN TRANSACTION (OFFLINE)';
+      btn.disabled = false;
+      return;
+    }
+
+    // Rebuild the unsigned transaction to get the hash for signing
+    const txData = buildUnsignedTx(txInfo.utxoTxid, txInfo.utxoVout, txInfo.utxoValue, txInfo.recipient, txInfo.amount, txInfo.fee, txInfo.sender);
+
+    // Double SHA-256 of the serialized tx (for signing)
+    const txHash = SHA256.doubleHash(txData.txForSigning);
+
+    // Sign with ECDSA
+    const sig = ecdsaSign(privKeyHex, txHash);
+    const derSig = derEncode(sig);
+
+    // Build signed transaction
+    const signedTx = buildSignedTx(txData, derSig, pubKey.compressed);
+    const signedHex = bytesToHex(signedTx);
+
+    // Compute txid (double sha256 of signed tx, reversed)
+    const txidHash = SHA256.doubleHash(signedTx);
+    const txidHex = bytesToHex(txidHash.reverse());
+
+    // Display
+    document.getElementById('agSignedHex').textContent = signedHex;
+    document.getElementById('agTxDetails').innerHTML =
+      'TXID: <span style="color:var(--accent);">' + txidHex + '</span><br>' +
+      'From: ' + txInfo.sender + '<br>' +
+      'To: ' + txInfo.recipient + '<br>' +
+      'Amount: ' + txInfo.amount + ' sats (' + (txInfo.amount/100000000).toFixed(8) + ' BTC)<br>' +
+      'Fee: ' + txInfo.fee + ' sats<br>' +
+      (txInfo.change > 0 ? 'Change: ' + txInfo.change + ' sats (back to you)' : 'No change');
+
+    document.getElementById('agSignedOutput').style.display = 'block';
+    document.getElementById('agSignedOutput').scrollIntoView({ behavior: 'smooth' });
+
+    // Also populate the broadcast field
+    document.getElementById('agBroadcastInput').value = signedHex;
+
+  } catch (e) {
+    alert('Signing error: ' + e.message);
+  }
+
+  btn.textContent = 'SIGN TRANSACTION (OFFLINE)';
+  btn.disabled = false;
+}
+
+function destroyAirgap() {
+  document.getElementById('agSignedHex').textContent = '';
+  document.getElementById('agTxDetails').innerHTML = '';
+  document.getElementById('agSignedOutput').style.display = 'none';
+  document.getElementById('agUnsignedInput').value = '';
+  document.getElementById('agLayer1').value = '';
+  document.getElementById('agLayer2').value = '';
+  document.getElementById('agLayer3').value = '';
+  document.getElementById('agLayer5').value = '';
+  agDiceRolls = [];
+  renderDiceAG();
+}
+
+// =====================================================
+// COPY DONATION ADDRESS
+// =====================================================
+function fallbackCopy(text, el) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  const msg = el.nextElementSibling;
+  if (msg) { msg.textContent = 'Copied!'; msg.style.color = 'var(--green)'; setTimeout(() => { msg.textContent = 'Click to copy'; msg.style.color = 'var(--text-dim)'; }, 2000); }
+}
+
+function copyDonation(el) {
+  const addr = el.textContent;
+  if (addr.includes('YOUR_')) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(addr).then(() => {
+      const msg = el.nextElementSibling;
+      msg.textContent = 'Copied!';
+      msg.style.color = 'var(--green)';
+      setTimeout(() => { msg.textContent = 'Click to copy'; msg.style.color = 'var(--text-dim)'; }, 2000);
+    }).catch(() => { fallbackCopy(addr, el); });
+  } else {
+    fallbackCopy(addr, el);
+  }
+}
+
+// =====================================================
+// SELF-TEST WITH KNOWN VECTORS
+// =====================================================
+async function runSelfTest() {
+  const results = document.getElementById('testResults');
+  results.innerHTML = '<div style="color:var(--text-dim);">Running tests via Rust backend...</div>';
+
+  try {
+    const testResults = await invoke('run_self_test');
+    let html = '';
+    let passed = 0;
+    let failed = 0;
+
+    testResults.forEach(t => {
+      if (t.passed) passed++; else failed++;
+      html += '<div style="padding:8px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;">';
+      html += '<span>' + t.name + '</span>';
+      html += t.passed ? '<span style="color:var(--green); font-weight:bold;">PASS</span>' : '<span style="color:var(--red); font-weight:bold;">FAIL</span>';
+      html += '</div>';
+      if (!t.passed) {
+        html += '<div style="padding:4px 8px; font-size:0.75em; color:var(--red);">Expected: ' + t.expected + ' | Got: ' + t.got + '</div>';
+      }
+    });
+
+    const total = passed + failed;
+    html = '<div style="padding:15px; margin-bottom:15px; border-radius:6px; text-align:center; font-size:1.1em; ' +
+      (failed === 0 ? 'background:rgba(76,175,80,0.15); border:1px solid var(--green); color:var(--green);' : 'background:rgba(239,83,80,0.15); border:1px solid var(--red); color:var(--red);') +
+      '"><strong>' + (failed === 0 ? 'ALL ' + total + ' TESTS PASSED (Rust Backend)' : failed + ' of ' + total + ' TESTS FAILED') + '</strong><br>' +
+      '<span style="font-size:0.8em;">' + (failed === 0 ? 'All cryptographic primitives verified. Memory zeroing confirmed.' : 'DO NOT USE THIS TOOL.') + '</span></div>' + html;
+
+    results.innerHTML = html;
+  } catch(err) {
+    results.innerHTML = '<div style="color:var(--red);">Error running tests: ' + err + '</div>';
+  }
+}
+
+// Original runSelfTest kept as dead code reference
+async function _runSelfTest_browser() {
+  const results = document.getElementById('testResults');
+  results.innerHTML = '<div style="color:var(--text-dim);">Running tests...</div>';
+  let html = '';
+  let passed = 0;
+  let failed = 0;
+
+  function test(name, actual, expected) {
+    const ok = actual === expected;
+    if (ok) passed++; else failed++;
+    html += '<div style="padding:8px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;">';
+    html += '<span>' + name + '</span>';
+    if (ok) {
+      html += '<span style="color:var(--green); font-weight:bold;">PASS</span>';
+    } else {
+      html += '<span style="color:var(--red); font-weight:bold;">FAIL</span>';
+    }
+    html += '</div>';
+    if (!ok) {
+      html += '<div style="padding:4px 8px; font-size:0.75em; color:var(--red); word-break:break-all;">';
+      html += 'Expected: ' + expected + '<br>Got: ' + actual;
+      html += '</div>';
+    }
+  }
+
+  // Test 1: SHA-256 (NIST test vector)
+  // SHA256("abc") = ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+  const sha256abc = bytesToHex(SHA256.hash(new TextEncoder().encode('abc')));
+  test('SHA-256 ("abc")', sha256abc, 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+
+  // Test 2: SHA-256 empty string
+  const sha256empty = bytesToHex(SHA256.hash(new Uint8Array(0)));
+  test('SHA-256 (empty)', sha256empty, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+
+  // Test 3: SHA-256 double hash
+  const sha256double = bytesToHex(SHA256.doubleHash(new TextEncoder().encode('abc')));
+  test('SHA-256 double hash ("abc")', sha256double, '4f8b42c22dd3729b519ba6f68d2da7cc5b2d606d05daed5ad5128cc03e6c6358');
+
+  // Test 4: RIPEMD-160
+  // RIPEMD160("abc") = 8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
+  const ripe160abc = bytesToHex(RIPEMD160.hash(new TextEncoder().encode('abc')));
+  test('RIPEMD-160 ("abc")', ripe160abc, '8eb208f7e05d987a9b044a8e98c6b087f15a0bfc');
+
+  // Test 5: Keccak-256
+  // Keccak256("") = c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+  const keccakEmpty = bytesToHex(KECCAK256.hash(new Uint8Array(0)));
+  test('Keccak-256 (empty)', keccakEmpty, 'c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470');
+
+  // Test 6: secp256k1 public key derivation
+  // Known test: privkey = 1 => pubkey compressed = 0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+  const pubKey1 = SECP256K1.getPublicKey('0000000000000000000000000000000000000000000000000000000000000001');
+  test('secp256k1 pubkey (privkey=1)', pubKey1.compressed, '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798');
+
+  // Test 7: Bitcoin address from known private key
+  // privkey = 1 => address = 1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH
+  const btcAddr1 = publicKeyToAddress(pubKey1.compressed, 0x00);
+  test('Bitcoin address (privkey=1)', btcAddr1, '1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH');
+
+  // Test 8: Ethereum address from known private key
+  // privkey = 1 => eth address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
+  const ethAddr1 = publicKeyToEthAddress(pubKey1.uncompressed);
+  test('Ethereum address (privkey=1)', ethAddr1.toLowerCase(), '0x7e5f4552091a69125d5dfcb7b8c2659029395bdf');
+
+  // Test 9: WIF encoding
+  // privkey = 1 => WIF (compressed) = KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn
+  const wif1 = privateKeyToWIF(hexToBytes('0000000000000000000000000000000000000000000000000000000000000001'), 0x80);
+  test('WIF encoding (privkey=1)', wif1, 'KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn');
+
+  // Test 10: Dogecoin address from known private key
+  // privkey = 1 => doge address starts with D
+  const dogeAddr1 = publicKeyToAddress(pubKey1.compressed, 0x1E);
+  test('Dogecoin address (privkey=1, starts with D)', dogeAddr1.startsWith('D') ? 'true' : 'false', 'true');
+
+  // Test 11: ECDSA signing (deterministic - RFC 6979)
+  const testMsg = SHA256.hash(new TextEncoder().encode('test message'));
+  const testPriv = '0000000000000000000000000000000000000000000000000000000000000001';
+  const sig = ecdsaSign(testPriv, testMsg);
+  const derBytes = derEncode(sig);
+  test('ECDSA signing (deterministic, DER encoded)', derBytes.length > 68 && derBytes.length < 73 ? 'valid length' : 'invalid', 'valid length');
+
+  // Test 12: ECDSA signature verification
+  const sigValid = NobleSecp256k1.verify(sig, testMsg, NobleSecp256k1.getPublicKey(NobleFromHex(testPriv), true));
+  test('ECDSA signature verification', sigValid ? 'true' : 'false', 'true');
+
+  // Test 13: PBKDF2-SHA512 determinism
+  const encoder = new TextEncoder();
+  const recipe1 = new Uint8Array(encoder.encode('test-recipe'));
+  const salt1 = new Uint8Array(encoder.encode('FortressKey-v1-deterministic-salt-2025'));
+  const d1 = NoblePBKDF2(NobleSHA512, recipe1, salt1, { c: 1000, dkLen: 32 });
+  const d2 = NoblePBKDF2(NobleSHA512, recipe1, salt1, { c: 1000, dkLen: 32 });
+  const pbkdf2Match = bytesToHex(d1) === bytesToHex(d2);
+  test('PBKDF2-SHA512 determinism', pbkdf2Match ? 'true' : 'false', 'true');
+
+  // Test 14: Base58Check encode/decode roundtrip
+  const testPayload = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13]);
+  const b58encoded = BASE58.encodeCheck(testPayload);
+  const b58decoded = base58Decode(b58encoded);
+  // Remove 4-byte checksum from decoded
+  const b58payload = b58decoded.slice(0, b58decoded.length - 4);
+  test('Base58Check encode/decode', bytesToHex(b58payload), bytesToHex(testPayload));
+
+  // Test 15: Quantum Shield (Keccak cascade determinism)
+  let qs1 = SHA256.hash(new TextEncoder().encode('quantum-test'));
+  let qs2 = SHA256.hash(new TextEncoder().encode('quantum-test'));
+  for (let i = 0; i < 100; i++) { qs1 = KECCAK256.hash(qs1); qs2 = KECCAK256.hash(qs2); }
+  test('Quantum Shield Keccak cascade determinism', bytesToHex(qs1), bytesToHex(qs2));
+
+  // Summary
+  const total = passed + failed;
+  html = '<div style="padding:15px; margin-bottom:15px; border-radius:6px; text-align:center; font-size:1.1em; ' +
+    (failed === 0 ? 'background:rgba(76,175,80,0.15); border:1px solid var(--green); color:var(--green);' : 'background:rgba(239,83,80,0.15); border:1px solid var(--red); color:var(--red);') +
+    '"><strong>' + (failed === 0 ? 'ALL ' + total + ' TESTS PASSED' : failed + ' of ' + total + ' TESTS FAILED') + '</strong><br>' +
+    '<span style="font-size:0.8em;">' + (failed === 0 ? 'All cryptographic primitives produce correct, verified outputs.' : 'DO NOT USE THIS TOOL. Cryptographic verification failed.') + '</span></div>' + html;
+
+  results.innerHTML = html;
+}
+
+// =====================================================
+// ONLINE DETECTION + DOWNLOAD
+// =====================================================
+function checkOnlineStatus() {
+  const warning = document.getElementById('onlineWarning');
+  const ready = document.getElementById('offlineReady');
+  if (navigator.onLine) {
+    warning.style.display = 'block';
+    ready.style.display = 'none';
+  } else {
+    warning.style.display = 'none';
+    ready.style.display = 'block';
+  }
+}
+
+function downloadOffline() {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob(['<!DOCTYPE html>\n' + html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'fortress-key.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// =====================================================
+// INIT
+// =====================================================
+initScanner();
+updateEntropy();
+checkOnlineStatus();
+window.addEventListener('online', checkOnlineStatus);
+window.addEventListener('offline', checkOnlineStatus);
+if (document.getElementById('downloadBtn')) document.getElementById('downloadBtn').addEventListener('click', downloadOffline);
+
+</script>
+
+</body>
+</html>

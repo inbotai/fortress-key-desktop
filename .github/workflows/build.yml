@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.1.0)'
+        required: false
+        default: 'v1.1.0'
 
 permissions:
   contents: write
@@ -56,10 +61,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Fortress Key Desktop ${{ github.ref_name }}'
+          tagName: ${{ github.ref_name != 'main' && github.ref_name || inputs.version || 'v1.1.0' }}
+          releaseName: 'Fortress Key Desktop ${{ github.ref_name != ''main'' && github.ref_name || inputs.version || ''v1.1.0'' }}'
           releaseBody: |
-            ## Fortress Key Desktop ${{ github.ref_name }}
+            ## Fortress Key Desktop ${{ github.ref_name != 'main' && github.ref_name || inputs.version || 'v1.1.0' }}
 
             Native desktop app with Rust crypto backend. Secure memory zeroing. No browser limitations.
 
